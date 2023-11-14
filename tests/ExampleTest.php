@@ -1,6 +1,6 @@
 <?php
 
-namespace Zhineng\Skeleton\Tests;
+namespace Dew\Tablestore\Tests;
 
 use PHPUnit\Framework\TestCase;
 

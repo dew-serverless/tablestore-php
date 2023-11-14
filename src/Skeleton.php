@@ -1,6 +1,6 @@
 <?php
 
-namespace Zhineng\Skeleton;
+namespace Dew\Tablestore;
 
 class Skeleton
 {

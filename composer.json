@@ -1,5 +1,5 @@
 {
-    "name": "lizhineng/skeleton-php",
+    "name": "dew-serverless/tablestore-php",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -16,12 +16,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Zhineng\\Skeleton\\": "src"
+            "Dew\\Tablestore\\": "src",
+            "Protos\\": "src/Protos"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Zhineng\\Skeleton\\Tests\\": "tests"
+            "Dew\\Tablestore\\Tests\\": "tests"
         }
     }
 }
