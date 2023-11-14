@@ -1,0 +1,96 @@
+syntax = "proto2";
+
+option php_namespace = "Protos";
+option php_metadata_namespace = "Protos\\Metadata";
+
+package acs.tablestore.row.single;
+
+message GetRowRequest {
+  required string table_name = 1;
+  required bytes primary_key = 2;
+  repeated string columns_to_get = 3;
+  optional TimeRange time_range = 4;
+  optional int32 max_versions = 5;
+  optional bytes filter = 7;
+  optional string start_column = 8;
+  optional string end_column = 9;
+  optional bytes token = 10;
+}
+
+message GetRowResponse {
+  required ConsumedCapacity consumed = 1;
+  required bytes row = 2;
+}
+
+message PutRowRequest {
+  required string table_name = 1;
+  required bytes row = 2;
+  required Condition condition = 3;
+  optional ReturnContent return_content = 4;
+}
+
+message PutRowResponse {
+  required ConsumedCapacity consumed = 1;
+  optional bytes row = 2;
+}
+
+message UpdateRowRequest {
+  required string table_name = 1;
+  required bytes row_change = 2;
+  required Condition condition = 3;
+  optional ReturnContent return_content = 4;
+}
+
+message UpdateRowResponse {
+  required ConsumedCapacity consumed = 1;
+  optional bytes row = 2;
+}
+
+message DeleteRowRequest {
+  required string table_name = 1;
+  required bytes primary_key = 2;
+  required Condition condition = 3;
+  optional ReturnContent return_content = 4;
+}
+
+message DeleteRowResponse {
+  required ConsumedCapacity consumed = 1;
+  optional bytes row = 2;
+}
+
+message TimeRange {
+  optional int64 start_time = 1;
+  optional int64 end_time = 2;
+  optional int64 specific_time = 3;
+}
+
+message Condition {
+  required RowExistenceExpectation row_existence = 1;
+  optional bytes column_condition = 2;
+}
+
+enum RowExistenceExpectation {
+  IGNORE = 0;
+  EXPECT_EXIST = 1;
+  EXPECT_NOT_EXIST = 2;
+}
+
+message ReturnContent {
+  optional ReturnType return_type = 1;
+  repeated string return_column_names = 2;
+}
+
+enum ReturnType {
+  RT_NONE = 0;
+  RT_PK = 1;
+  RT_AFTER_MODIFY = 2;
+}
+
+message ConsumedCapacity {
+  required CapacityUnit capacity_unit = 1;
+}
+
+message CapacityUnit {
+  optional int32 read = 1;
+  optional int32 write = 2;
+}
