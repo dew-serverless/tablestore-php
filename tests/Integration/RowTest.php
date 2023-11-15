@@ -1,9 +1,5 @@
 <?php
 
-beforeEach(function () {
-    //
-})->skip(! integrationTestEnabled(), 'integraion test not enabled');
-
 test('data can be stored', function () {
     $response = tablestore()->table('testing_items')->insert([
         // PrimaryKey::string('key', 'foo'),
@@ -11,4 +7,4 @@ test('data can be stored', function () {
     ]);
 
     expect($response)->toBeArray();
-});
+})->skip(! integrationTestEnabled(), 'integraion test not enabled');
