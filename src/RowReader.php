@@ -22,7 +22,12 @@ class RowReader
     /**
      * The cell data.
      *
-     * @var array<string, mixed>
+     * @var array{
+     *   name?: string,
+     *   value?: mixed,
+     *   class?: class-string<\Dew\Tablestore\Cells\Cell>,
+     *   timestamp?: int
+     * }
      */
     protected array $cell;
 
@@ -136,15 +141,34 @@ class RowReader
     }
 
     /**
+     * Decode cell timestamp buffer.
+     */
+    protected function readCellTs(): int
+    {
+        $this->cell['timestamp'] = $this->buffer->readLittleEndian64();
+
+        return self::CODE_CONTINUE;
+    }
+
+    /**
      * Decode cell checksum buffer.
      */
     protected function readCellChecksum(): int
     {
-        $this->data[$this->cell['name']] = new $this->cell['class'](
-            $this->cell['name'], $this->cell['value']
-        );
+        if (! isset($this->cell['class'], $this->cell['name'], $this->cell['value'])) {
+            throw new RowReaderException('Could not build a cell instance from the incomplete data payload.');
+        }
 
-        $this->buffer->read(1);
+        /** @var \Dew\Tablestore\Cells\Cell */
+        $cell = new $this->cell['class']($this->cell['name'], $this->cell['value']);
+
+        if ($cell instanceof Cells\Attribute && isset($this->cell['timestamp'])) {
+            $cell->setTimestamp($this->cell['timestamp']);
+        }
+
+        $this->data[$cell->name()] = $cell;
+
+        $this->buffer->readChar();
 
         return self::CODE_CONTINUE;
     }
@@ -171,6 +195,7 @@ class RowReader
             Tag::CELL => $this->readCell(),
             Tag::CELL_NAME => $this->readCellName(),
             Tag::CELL_VALUE => $this->readCellValue(),
+            Tag::CELL_TS => $this->readCellTs(),
             Tag::CELL_CHECKSUM => $this->readCellChecksum(),
             Tag::ROW_CHECKSUM => $this->readRowChecksum(),
             0 => 1,

@@ -93,3 +93,18 @@ test('add row', function () {
         ->and($result['key'])->toBeInstanceOf(PrimaryKeyContract::class)
         ->and($result['value'])->toBeInstanceOf(AttributeContract::class);
 });
+
+test('attribute with timestamp', function () {
+    $mockedChecksum = new MockedChecksum;
+    $writer = new RowWriter(new PlainbufferWriter, $mockedChecksum);
+    $writer->writeHeader()->addRow([
+        PrimaryKey::string('key', 'foo'),
+        Attribute::string('value', 'bar')->setTimestamp($now = new DateTimeImmutable),
+    ]);
+    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()));
+    $result = $reader->toArray();
+    expect($result)->toBeArray()
+        ->and($result)->toHaveKey('value')
+        ->and($result['value'])->toBeInstanceOf(AttributeContract::class)
+        ->and($result['value']->getTimestamp())->toBe($now->getTimestamp());
+});

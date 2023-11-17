@@ -2,11 +2,12 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Cells\Attribute;
 use Dew\Tablestore\Cells\Cell;
 use Dew\Tablestore\Cells\Tag;
-use Dew\Tablestore\Contracts\Attribute;
+use Dew\Tablestore\Contracts\Attribute as AttributeContract;
 use Dew\Tablestore\Contracts\CalculatesChecksum;
-use Dew\Tablestore\Contracts\PrimaryKey;
+use Dew\Tablestore\Contracts\PrimaryKey as PrimaryKeyContract;
 
 class RowWriter
 {
@@ -42,8 +43,8 @@ class RowWriter
      */
     public function addRow(array $cells): self
     {
-        $pks = array_filter($cells, fn ($cell): bool => $cell instanceof PrimaryKey);
-        $attrs = array_filter($cells, fn ($cell): bool => $cell instanceof Attribute);
+        $pks = array_filter($cells, fn ($cell): bool => $cell instanceof PrimaryKeyContract);
+        $attrs = array_filter($cells, fn ($cell): bool => $cell instanceof AttributeContract);
 
         return $this->newRow()
             ->addPk($pks)
@@ -119,6 +120,10 @@ class RowWriter
             $this->addCellValue($cell);
         }
 
+        if ($cell instanceof Attribute && $cell->getTimestamp() !== null) {
+            $this->addCellTs($cell->getTimestamp());
+        }
+
         return $this->addCellChecksum($checksum);
     }
 
@@ -153,6 +158,20 @@ class RowWriter
         $this->buffer->writeChar(Tag::CELL_VALUE);
 
         $cell->toFormattedValue($this->buffer);
+
+        return $this;
+    }
+
+    /**
+     * Encode the cell timestamp.
+     *
+     * cell_ts = tag_cell_ts cell_ts_value
+     * cell_ts_value = int64
+     */
+    public function addCellTs(int $timestamp): self
+    {
+        $this->buffer->writeChar(Tag::CELL_TS);
+        $this->buffer->writeLittleEndian64($timestamp);
 
         return $this;
     }
