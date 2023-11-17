@@ -4,10 +4,17 @@ namespace Dew\Tablestore;
 
 use Dew\Tablestore\Cells\Cell;
 use Dew\Tablestore\Cells\Tag;
+use Dew\Tablestore\Contracts\Attribute;
 use Dew\Tablestore\Contracts\CalculatesChecksum;
+use Dew\Tablestore\Contracts\PrimaryKey;
 
 class RowWriter
 {
+    /**
+     * The row checksum.
+     */
+    protected int $rowChecksum = 0;
+
     /**
      * Create a row buffer writer.
      */
@@ -24,6 +31,32 @@ class RowWriter
     public function writeHeader(): self
     {
         $this->buffer->writeLittleEndian32(Tag::HEADER);
+
+        return $this;
+    }
+
+    /**
+     * Encode the row.
+     *
+     * @param  \Dew\Tablestore\Cells\Cell[]  $cells
+     */
+    public function addRow(array $cells): self
+    {
+        $pks = array_filter($cells, fn ($cell): bool => $cell instanceof PrimaryKey);
+        $attrs = array_filter($cells, fn ($cell): bool => $cell instanceof Attribute);
+
+        return $this->newRow()
+            ->addPk($pks)
+            ->addAttr($attrs)
+            ->addRowChecksum($this->rowChecksum);
+    }
+
+    /**
+     * Start a new row.
+     */
+    protected function newRow(): self
+    {
+        $this->rowChecksum = 0;
 
         return $this;
     }
@@ -75,13 +108,18 @@ class RowWriter
     {
         $this->buffer->writeChar(Tag::CELL);
 
+        $this->rowChecksum = $this->checksum->char(
+            $checksum = $cell->getChecksumBy($this->checksum),
+            $this->rowChecksum
+        );
+
         $this->addCellName($cell);
 
         if ($cell->value() !== null) {
             $this->addCellValue($cell);
         }
 
-        return $this->addCellChecksum($cell->getChecksumBy($this->checksum));
+        return $this->addCellChecksum($checksum);
     }
 
     /**
@@ -127,6 +165,19 @@ class RowWriter
     public function addCellChecksum(int $checksum): self
     {
         $this->buffer->writeChar(Tag::CELL_CHECKSUM);
+        $this->buffer->writeChar($checksum);
+
+        return $this;
+    }
+
+    /**
+     * Encode the row checksum.
+     *
+     * row_checksum = tag_row_checksum row_crc8
+     */
+    public function addRowChecksum(int $checksum): self
+    {
+        $this->buffer->writeChar(Tag::ROW_CHECKSUM);
         $this->buffer->writeChar($checksum);
 
         return $this;

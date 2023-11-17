@@ -150,6 +150,17 @@ class RowReader
     }
 
     /**
+     * Decode row checksum buffer.
+     */
+    protected function readRowChecksum(): int
+    {
+        // TODO: validate row checksum
+        $this->buffer->readChar();
+
+        return self::CODE_CONTINUE;
+    }
+
+    /**
      * Handle the given tag.
      */
     protected function handle(int $tag): int
@@ -161,6 +172,7 @@ class RowReader
             Tag::CELL_NAME => $this->readCellName(),
             Tag::CELL_VALUE => $this->readCellValue(),
             Tag::CELL_CHECKSUM => $this->readCellChecksum(),
+            Tag::ROW_CHECKSUM => $this->readRowChecksum(),
             0 => 1,
             default => throw new RowReaderException("Unexpected tag [$tag] occurred."),
         };

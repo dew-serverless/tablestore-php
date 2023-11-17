@@ -78,3 +78,18 @@ it('has attribute', function ($attr) {
         Attribute::binary('value', 'foo'),
     ],
 ]);
+
+test('add row', function () {
+    $mockedChecksum = new MockedChecksum;
+    $writer = new RowWriter(new PlainbufferWriter, $mockedChecksum);
+    $writer->writeHeader()->addRow([
+        PrimaryKey::string('key', 'foo'),
+        Attribute::string('value', 'bar'),
+    ]);
+    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()));
+    $result = $reader->toArray();
+    expect($result)->toBeArray()
+        ->and($result)->toHaveKeys(['key', 'value'])
+        ->and($result['key'])->toBeInstanceOf(PrimaryKeyContract::class)
+        ->and($result['value'])->toBeInstanceOf(AttributeContract::class);
+});
