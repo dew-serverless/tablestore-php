@@ -5,6 +5,8 @@ namespace Dew\Tablestore;
 use Protos\Condition;
 use Protos\PutRowRequest;
 use Protos\PutRowResponse;
+use Protos\ReturnContent;
+use Protos\ReturnType;
 use Protos\RowExistenceExpectation;
 
 class Builder
@@ -12,7 +14,7 @@ class Builder
     /**
      * The collected rows.
      *
-     * @var array<int, mixed>
+     * @var \Dew\Tablestore\Cells\Cell[]
      */
     protected array $rows = [];
 
@@ -29,7 +31,7 @@ class Builder
     /**
      * Insert the rows to table.
      *
-     * @param  array<int, mixed>  $rows
+     * @param  \Dew\Tablestore\Cells\Cell[]  $rows
      * @return array<string, mixed>
      */
     public function insert(array $rows): array
@@ -46,11 +48,17 @@ class Builder
      */
     protected function putRow(): array
     {
+        $row = $this->rowWriter()->addRow($this->rows);
+
         $request = new PutRowRequest;
         $request->setTableName($this->table);
-        $request->setRow('');
+        $request->setRow($row->getBuffer());
         $request->setCondition(new Condition([
             'row_existence' => RowExistenceExpectation::IGNORE,
+        ]));
+        $request->setReturnContent(new ReturnContent([
+            'return_column_names' => [],
+            'return_type' => ReturnType::RT_PK,
         ]));
 
         $response = new PutRowResponse;
@@ -65,7 +73,7 @@ class Builder
                     'write' => $response->getConsumed()?->getCapacityUnit()?->getWrite(),
                 ],
             ],
-            'row' => [],
+            'row' => $this->rowReader($response->getRow())->toArray(),
         ];
     }
 
@@ -83,5 +91,23 @@ class Builder
     public function tableName(): string
     {
         return $this->table;
+    }
+
+    /**
+     * Make a new row writer.
+     */
+    protected function rowWriter(): RowWriter
+    {
+        $row = new RowWriter(new PlainbufferWriter, new Crc);
+
+        return $row->writeHeader();
+    }
+
+    /**
+     * Make a new row reader.
+     */
+    protected function rowReader(string $buffer): RowReader
+    {
+        return new RowReader(new PlainbufferReader($buffer));
     }
 }
