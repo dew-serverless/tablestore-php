@@ -49,6 +49,7 @@ class RowWriter
         return $this->newRow()
             ->addPk($pks)
             ->addAttr($attrs)
+            ->addDeleteMarker()
             ->addRowChecksum($this->rowChecksum);
     }
 
@@ -185,6 +186,19 @@ class RowWriter
     {
         $this->buffer->writeChar(Tag::CELL_CHECKSUM);
         $this->buffer->writeChar($checksum);
+
+        return $this;
+    }
+
+    /**
+     * Encode the delete marker.
+     */
+    public function addDeleteMarker(): self
+    {
+        // TODO: Determine if the row contains delete request.
+        $delete = (int) false;
+
+        $this->rowChecksum = $this->checksum->char($delete, $this->rowChecksum);
 
         return $this;
     }
