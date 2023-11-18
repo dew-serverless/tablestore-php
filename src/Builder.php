@@ -19,6 +19,11 @@ class Builder
     protected array $rows = [];
 
     /**
+     * The row existence expectation.
+     */
+    protected int $expectation = RowExistenceExpectation::IGNORE;
+
+    /**
      * The returned row of the response.
      */
     protected int $returned = ReturnType::RT_PK;
@@ -31,6 +36,40 @@ class Builder
         protected string $table
     ) {
         //
+    }
+
+    /**
+     * Expect the row is existing.
+     */
+    public function expectExists(): self
+    {
+        return $this->expect(RowExistenceExpectation::EXPECT_EXIST);
+    }
+
+    /**
+     * Expect the row is missing.
+     */
+    public function expectMissing(): self
+    {
+        return $this->expect(RowExistenceExpectation::EXPECT_NOT_EXIST);
+    }
+
+    /**
+     * Ignore the row existence.
+     */
+    public function ignoreExistence(): self
+    {
+        return $this->expect(RowExistenceExpectation::IGNORE);
+    }
+
+    /**
+     * Set the row existence expectation.
+     */
+    public function expect(int $expectation): self
+    {
+        $this->expectation = $expectation;
+
+        return $this;
     }
 
     /**
@@ -93,7 +132,7 @@ class Builder
         $request->setTableName($this->table);
         $request->setRow($row->getBuffer());
         $request->setCondition(new Condition([
-            'row_existence' => RowExistenceExpectation::IGNORE,
+            'row_existence' => $this->expectation,
         ]));
         $request->setReturnContent(new ReturnContent([
             'return_column_names' => [],
