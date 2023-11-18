@@ -2,7 +2,9 @@
 
 namespace Dew\Tablestore;
 
-class Crc
+use Dew\Tablestore\Contracts\CalculatesChecksum;
+
+class Crc implements CalculatesChecksum
 {
     /**
      * The memoization of the polynomial calculation x^8 + x^2 + x +1.
@@ -31,4 +33,61 @@ class Crc
         0xDE, 0xD9, 0xD0, 0xD7, 0xC2, 0xC5, 0xCC, 0xCB, 0xE6, 0xE1, 0xE8, 0xEF,
         0xFA, 0xFD, 0xF4, 0xF3,
     ];
+
+    /**
+     * Calculate checksum with the given string.
+     */
+    public function string(string $value, int $checksum): int
+    {
+        $length = strlen($value);
+
+        for ($i = 0; $i < $length; $i++) {
+            $checksum = $this->char(ord($value[$i]), $checksum);
+        }
+
+        return $checksum;
+    }
+
+    /**
+     * Calculate checksum with the given char.
+     */
+    public function char(int $value, int $checksum): int
+    {
+        return self::TABLE[($checksum ^ $value) & 0xFF];
+    }
+
+    /**
+     * Calculate checksum with the given integer value in 4 bytes.
+     */
+    public function int32(int $value, int $checksum): int
+    {
+        for ($i = 0; $i < 4; $i++) {
+            $checksum = $this->char(($value >> $i * 8) & 0xFF, $checksum);
+        }
+
+        return $checksum;
+    }
+
+    /**
+     * Calculate checksum with the given integer value in 8 bytes.
+     */
+    public function int64(int $value, int $checksum): int
+    {
+        $low = $value & 0xFFFFFFFF;
+        $high = $value >> 32 & 0xFFFFFFFF;
+
+        $checksum = $this->int32($low, $checksum);
+
+        return $this->int32($high, $checksum);
+    }
+
+    /**
+     * Calculate checksum with the given double value.
+     */
+    public function double(float $double, int $checksum): int
+    {
+        $data = pack('d', $double);
+
+        return $this->string($data, $checksum);
+    }
 }
