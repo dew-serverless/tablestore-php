@@ -34,6 +34,16 @@ class RowReader
     protected array $cell;
 
     /**
+     * Determine if the row contains delete marker.
+     */
+    protected bool $hasDeleteMarker = false;
+
+    /**
+     * The row checksum.
+     */
+    protected int $rowChecksum = 0;
+
+    /**
      * The decoded data.
      *
      * @var array<mixed>|null
@@ -159,8 +169,9 @@ class RowReader
     protected function readCellChecksum(): int
     {
         $cell = $this->toCellInstance();
+        $checksum = $cell->getChecksumBy($this->checksum);
 
-        if ($this->buffer->readChar() !== $cell->getChecksumBy($this->checksum)) {
+        if ($this->buffer->readChar() !== $checksum) {
             throw new RowReaderException("Cell [{$cell->name()}] checksum mismatched.");
         }
 
@@ -168,6 +179,18 @@ class RowReader
         // we can process the cell data. After validating the integrity of
         // the cell, we could confidently append it to the decoded data.
         $this->data[$cell->name()] = $cell;
+
+        $this->rowChecksum = $this->checksum->char($checksum, $this->rowChecksum);
+
+        return self::CODE_CONTINUE;
+    }
+
+    /**
+     * Decode delete marker buffer.
+     */
+    protected function readDeleteMarker(): int
+    {
+        $this->hasDeleteMarker = true;
 
         return self::CODE_CONTINUE;
     }
@@ -177,8 +200,16 @@ class RowReader
      */
     protected function readRowChecksum(): int
     {
-        // TODO: validate row checksum
-        $this->buffer->readChar();
+        // When reaching the row checksum tag, there's the end of the row
+        // parsing phase. Before leaving, we do the final checksum for
+        // the whole data payload. Wait, remember the delete marker?
+        $this->rowChecksum = $this->checksum->char(
+            (int) $this->hasDeleteMarker, $this->rowChecksum
+        );
+
+        if ($this->buffer->readChar() !== $this->rowChecksum) {
+            throw new RowReaderException('Row checksum mismatched.');
+        }
 
         return self::CODE_CONTINUE;
     }
@@ -214,6 +245,7 @@ class RowReader
             Tag::CELL_VALUE => $this->readCellValue(),
             Tag::CELL_TS => $this->readCellTs(),
             Tag::CELL_CHECKSUM => $this->readCellChecksum(),
+            Tag::DELETE_MARKER => $this->readDeleteMarker(),
             Tag::ROW_CHECKSUM => $this->readRowChecksum(),
             0 => 1,
             default => throw new RowReaderException("Unexpected tag [$tag] occurred."),
