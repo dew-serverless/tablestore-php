@@ -151,7 +151,7 @@ class Builder
                     'write' => $response->getConsumed()?->getCapacityUnit()?->getWrite(),
                 ],
             ],
-            'row' => $this->rowReader($response->getRow())->toArray(),
+            'row' => $response->getRow() === '' ? null : $this->rowReader($response->getRow())->toArray(),
         ];
     }
 
