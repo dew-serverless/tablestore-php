@@ -186,6 +186,6 @@ class Builder
      */
     protected function rowReader(string $buffer): RowReader
     {
-        return new RowReader(new PlainbufferReader($buffer));
+        return new RowReader(new PlainbufferReader($buffer), new Crc);
     }
 }

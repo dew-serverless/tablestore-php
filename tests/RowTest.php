@@ -14,7 +14,7 @@ use Dew\Tablestore\Tests\Fixtures\MockedChecksum;
 
 test('buffer should start with a header tag', function () {
     $buffer = (new PlainbufferWriter)->writeLittleEndian32(0);
-    $reader = new RowReader(new PlainbufferReader($buffer->getBuffer()));
+    $reader = new RowReader(new PlainbufferReader($buffer->getBuffer()), new MockedChecksum);
     expect(fn () => $reader->toArray())->toThrow(RowReaderException::class, 'Seems like not a row buffer.');
 });
 
@@ -22,7 +22,7 @@ it('has primary key', function ($pk) {
     $mockedChecksum = new MockedChecksum;
     $writer = new RowWriter(new PlainbufferWriter, $mockedChecksum);
     $writer->writeHeader()->addPk([$pk]);
-    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()));
+    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()), new MockedChecksum);
     $result = $reader->toArray();
     expect($result)->toBeArray()->and($result)->toHaveKey($pk->name());
     /** @var \Dew\Tablestore\Cells\Cell $column */
@@ -48,7 +48,7 @@ it('has attribute', function ($attr) {
     $mockedChecksum = new MockedChecksum;
     $writer = new RowWriter(new PlainbufferWriter, $mockedChecksum);
     $writer->writeHeader()->addAttr([$attr]);
-    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()));
+    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()), new MockedChecksum);
     $result = $reader->toArray();
     expect($result)->toBeArray()->and($result)->toHaveKey($attr->name());
     /** @var \Dew\Tablestore\Cells\Cell $cell */
@@ -86,7 +86,7 @@ test('add row', function () {
         PrimaryKey::string('key', 'foo'),
         Attribute::string('value', 'bar'),
     ]);
-    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()));
+    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()), new MockedChecksum);
     $result = $reader->toArray();
     expect($result)->toBeArray()
         ->and($result)->toHaveKeys(['key', 'value'])
@@ -101,7 +101,7 @@ test('attribute with timestamp', function () {
         PrimaryKey::string('key', 'foo'),
         Attribute::string('value', 'bar')->setTimestamp($now = new DateTimeImmutable),
     ]);
-    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()));
+    $reader = new RowReader(new PlainbufferReader($writer->getBuffer()), new MockedChecksum);
     $result = $reader->toArray();
     expect($result)->toBeArray()
         ->and($result)->toHaveKey('value')

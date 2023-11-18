@@ -2,7 +2,9 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Cells\Cell;
 use Dew\Tablestore\Cells\Tag;
+use Dew\Tablestore\Contracts\CalculatesChecksum;
 use Dew\Tablestore\Exceptions\RowReaderException;
 
 class RowReader
@@ -39,7 +41,8 @@ class RowReader
     protected ?array $data = null;
 
     public function __construct(
-        protected PlainbufferReader $buffer
+        protected PlainbufferReader $buffer,
+        protected CalculatesChecksum $checksum
     ) {
         //
     }
@@ -155,20 +158,16 @@ class RowReader
      */
     protected function readCellChecksum(): int
     {
-        if (! isset($this->cell['class'], $this->cell['name'], $this->cell['value'])) {
-            throw new RowReaderException('Could not build a cell instance from the incomplete data payload.');
+        $cell = $this->toCellInstance();
+
+        if ($this->buffer->readChar() !== $cell->getChecksumBy($this->checksum)) {
+            throw new RowReaderException("Cell [{$cell->name()}] checksum mismatched.");
         }
 
-        /** @var \Dew\Tablestore\Cells\Cell */
-        $cell = new $this->cell['class']($this->cell['name'], $this->cell['value']);
-
-        if ($cell instanceof Cells\Attribute && isset($this->cell['timestamp'])) {
-            $cell->setTimestamp($this->cell['timestamp']);
-        }
-
+        // When reaching the cell checksum tag, there is the last stage where
+        // we can process the cell data. After validating the integrity of
+        // the cell, we could confidently append it to the decoded data.
         $this->data[$cell->name()] = $cell;
-
-        $this->buffer->readChar();
 
         return self::CODE_CONTINUE;
     }
@@ -182,6 +181,24 @@ class RowReader
         $this->buffer->readChar();
 
         return self::CODE_CONTINUE;
+    }
+
+    /**
+     * Build cell instance from context.
+     */
+    protected function toCellInstance(): Cell
+    {
+        if (! isset($this->cell['class'], $this->cell['name'], $this->cell['value'])) {
+            throw new RowReaderException('Could not build a cell instance from the incomplete data payload.');
+        }
+
+        $cell = new $this->cell['class']($this->cell['name'], $this->cell['value']);
+
+        if ($cell instanceof Cells\Attribute && isset($this->cell['timestamp'])) {
+            $cell->setTimestamp($this->cell['timestamp']);
+        }
+
+        return $cell;
     }
 
     /**
