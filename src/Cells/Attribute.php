@@ -18,8 +18,10 @@ abstract class Attribute extends Cell implements AttributeContract
      */
     public function setTimestamp(DateTimeInterface|int $timestamp): self
     {
+        // U: seconds since the Unix Epoch
+        // v: milliseconds
         $this->timestamp = $timestamp instanceof DateTimeInterface
-            ? $timestamp->getTimestamp()
+            ? (int) $timestamp->format('Uv')
             : $timestamp;
 
         return $this;

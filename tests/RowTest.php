@@ -106,5 +106,5 @@ test('attribute with timestamp', function () {
     expect($result)->toBeArray()
         ->and($result)->toHaveKey('value')
         ->and($result['value'])->toBeInstanceOf(AttributeContract::class)
-        ->and($result['value']->getTimestamp())->toBe($now->getTimestamp());
+        ->and($result['value']->getTimestamp())->toBe((int) $now->format('Uv'));
 });
