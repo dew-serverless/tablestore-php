@@ -19,6 +19,11 @@ class Builder
     protected array $rows = [];
 
     /**
+     * The returned row of the response.
+     */
+    protected int $returned = ReturnType::RT_PK;
+
+    /**
      * Create a builder.
      */
     public function __construct(
@@ -26,6 +31,40 @@ class Builder
         protected string $table
     ) {
         //
+    }
+
+    /**
+     * Set no returned row in response.
+     */
+    public function withoutReturn(): self
+    {
+        return $this->returned(ReturnType::RT_NONE);
+    }
+
+    /**
+     * Return the primary key in response.
+     */
+    public function returnPrimaryKey(): self
+    {
+        return $this->returned(ReturnType::RT_PK);
+    }
+
+    /**
+     * Return the modified attributes in response.
+     */
+    public function returnModified(): self
+    {
+        return $this->returned(ReturnType::RT_AFTER_MODIFY);
+    }
+
+    /**
+     * Set the return type of the response.
+     */
+    public function returned(int $type): self
+    {
+        $this->returned = $type;
+
+        return $this;
     }
 
     /**
@@ -58,7 +97,7 @@ class Builder
         ]));
         $request->setReturnContent(new ReturnContent([
             'return_column_names' => [],
-            'return_type' => ReturnType::RT_PK,
+            'return_type' => $this->returned,
         ]));
 
         $response = new PutRowResponse;
