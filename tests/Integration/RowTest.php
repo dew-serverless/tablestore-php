@@ -6,7 +6,12 @@ use Dew\Tablestore\PrimaryKey;
 test('data can be stored', function () {
     $response = tablestore()->table('testing_items')->insert([
         $key = PrimaryKey::string('key', 'foo'),
-        Attribute::string('value', 'bar'),
+        Attribute::integer('integer', 100),
+        Attribute::double('double', 3.14),
+        Attribute::boolean('true', true),
+        Attribute::boolean('false', false),
+        Attribute::string('string', 'foo'),
+        Attribute::binary('binary', 'bar'),
     ]);
 
     expect($response)->toBeArray()
