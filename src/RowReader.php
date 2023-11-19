@@ -285,6 +285,9 @@ class RowReader
     {
         $this->data = [];
 
+        // Firstly, we try to decode the header that every well-formed row
+        // Plainbuffer contains at the very beginning of the buffer. Or
+        // else not need to waste the resources to parse the remains.
         $this->readHeader();
 
         while ($this->handle($this->readTag())->shouldKeepParsing()) {
