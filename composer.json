@@ -38,12 +38,14 @@
         "test:style": "pint --test",
         "test:refactor": "rector --dry-run",
         "test:static": "phpstan analyse",
-        "test:unit": "pest",
+        "test:integration": "pest --group=integration",
+        "test:unit": "pest --exclude-group=integration",
         "test": [
             "@test:style",
             "@test:refactor",
             "@test:static",
-            "@test:unit"
+            "@test:unit",
+            "@test:integration"
         ]
     },
     "config": {
