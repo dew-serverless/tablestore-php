@@ -18,7 +18,8 @@
         "laravel/pint": "^1.0",
         "rector/rector": "^0.18.7",
         "phpstan/phpstan": "^1.10",
-        "phpstan/phpstan-strict-rules": "^1.5"
+        "phpstan/phpstan-strict-rules": "^1.5",
+        "mockery/mockery": "^1.6"
     },
     "autoload": {
         "psr-4": {
@@ -37,12 +38,14 @@
         "test:style": "pint --test",
         "test:refactor": "rector --dry-run",
         "test:static": "phpstan analyse",
-        "test:unit": "pest",
+        "test:integration": "pest --group=integration",
+        "test:unit": "pest --exclude-group=integration",
         "test": [
             "@test:style",
             "@test:refactor",
             "@test:static",
-            "@test:unit"
+            "@test:unit",
+            "@test:integration"
         ]
     },
     "config": {

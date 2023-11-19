@@ -2,6 +2,8 @@
 
 use Dew\Tablestore\Tablestore;
 
+uses()->group('integration')->in('Integration');
+
 function integrationTestEnabled(): bool
 {
     $value = getenv('INTEGRATION_TEST_ENABLED');
