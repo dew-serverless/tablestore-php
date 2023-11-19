@@ -280,6 +280,8 @@ class RowReader
 
     /**
      * Decode the row buffer.
+     *
+     * @phpstan-assert array<mixed> $this->data
      */
     protected function decode(): void
     {
@@ -306,7 +308,7 @@ class RowReader
             $this->decode();
         }
 
-        return $this->data; // @phpstan-ignore-line
+        return $this->data;
     }
 
     /**
