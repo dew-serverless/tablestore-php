@@ -11,10 +11,15 @@ class PlainbufferReader
      */
     protected int $current = 0;
 
+    /**
+     * The buffer end position.
+     */
+    protected int $end;
+
     public function __construct(
         protected string $buffer
     ) {
-        //
+        $this->end = strlen($this->buffer);
     }
 
     /**
@@ -89,6 +94,10 @@ class PlainbufferReader
      */
     protected function advance(int $length): void
     {
+        if ($this->current + $length > $this->end) {
+            throw new PlainbufferReaderException('Buffer overflow.');
+        }
+
         $this->current += $length;
     }
 
