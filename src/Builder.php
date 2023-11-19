@@ -2,6 +2,7 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Responses\RowDecodableResponse;
 use Protos\Condition;
 use Protos\GetRowRequest;
 use Protos\GetRowResponse;
@@ -177,9 +178,9 @@ class Builder
     /**
      * Query rows from table.
      *
-     * @return array<string, mixed>
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\GetRowResponse>
      */
-    public function get(): array
+    public function get(): RowDecodableResponse
     {
         return $this->getRow();
     }
@@ -223,9 +224,9 @@ class Builder
     /**
      * Send the get row request to Tablestore.
      *
-     * @return array<string, mixed>
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\GetRowResponse>
      */
-    protected function getRow(): array
+    protected function getRow(): RowDecodableResponse
     {
         $row = $this->rowWriter()->addRow($this->wheres);
 
@@ -236,19 +237,9 @@ class Builder
         $request->setMaxVersions($this->takes);
 
         $response = new GetRowResponse;
-        $response->mergeFromString(
-            $this->tablestore->send('/GetRow', $request)->getBody()->getContents()
-        );
+        $response->mergeFromString($this->tablestore->send('/GetRow', $request)->getBody()->getContents());
 
-        return [
-            'consumed' => [
-                'capacity_unit' => [
-                    'read' => $response->getConsumed()?->getCapacityUnit()?->getRead(),
-                    'write' => $response->getConsumed()?->getCapacityUnit()?->getWrite(),
-                ],
-            ],
-            'row' => $response->getRow() === '' ? null : $this->rowReader($response->getRow())->toArray(),
-        ];
+        return new RowDecodableResponse($response);
     }
 
     /**
