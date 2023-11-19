@@ -90,6 +90,14 @@ class PlainbufferReader
     }
 
     /**
+     * Determine if the cursur is at the end of the buffer.
+     */
+    public function eof(): bool
+    {
+        return $this->current === $this->end;
+    }
+
+    /**
      * Advance the cursur position.
      */
     protected function advance(int $length): void

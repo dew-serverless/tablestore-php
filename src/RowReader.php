@@ -10,9 +10,19 @@ use Dew\Tablestore\Exceptions\RowReaderException;
 class RowReader
 {
     /**
-     * The code indicates parsing continue.
+     * The code instructs keep parsing.
      */
-    protected const CODE_CONTINUE = 0;
+    protected const INSTRUCTOR_CONTINUE = 0;
+
+    /**
+     * The code instructs stop parsing.
+     */
+    protected const INSTRUCTOR_STOP = 1;
+
+    /**
+     * The pasring instructor.
+     */
+    protected int $instructor = self::INSTRUCTOR_CONTINUE;
 
     /**
      * The cell class.
@@ -60,41 +70,43 @@ class RowReader
     /**
      * Decode the buffer header.
      */
-    protected function readHeader(): int
+    protected function readHeader(): self
     {
         if ($this->buffer->readLittleEndian32() !== Tag::HEADER) {
             throw new RowReaderException('Seems like not a row buffer.');
         }
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode tag buffer.
      */
-    protected function readTag(): int
+    protected function readTag(): ?int
     {
+        if ($this->buffer->eof()) {
+            $this->instructor = self::INSTRUCTOR_STOP;
+
+            return null;
+        }
+
         return $this->buffer->readChar();
     }
 
     /**
      * Decode primary key buffer.
      */
-    protected function readPk(): int
+    protected function readPk(): self
     {
-        $this->enterPrimaryKeySection();
-
-        return self::CODE_CONTINUE;
+        return $this->enterPrimaryKeySection();
     }
 
     /**
      * Decode attribute buffer.
      */
-    protected function readAttr(): int
+    protected function readAttr(): self
     {
-        $this->enterAttributeSection();
-
-        return self::CODE_CONTINUE;
+        return $this->enterAttributeSection();
     }
 
     /**
@@ -120,29 +132,29 @@ class RowReader
     /**
      * Decode cell buffer.
      */
-    protected function readCell(): int
+    protected function readCell(): self
     {
         $this->cell = [];
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode cell name buffer.
      */
-    protected function readCellName(): int
+    protected function readCellName(): self
     {
         $this->cell['name'] = $this->buffer->read( // 2: read name by the size
             $this->buffer->readLittleEndian32()    // 1: get the name size
         );
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode cell value buffer.
      */
-    protected function readCellValue(): int
+    protected function readCellValue(): self
     {
         $this->buffer->readLittleEndian32();
 
@@ -150,23 +162,23 @@ class RowReader
 
         $this->cell['value'] = $cellClass::fromFormattedValue($this->buffer);
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode cell timestamp buffer.
      */
-    protected function readCellTs(): int
+    protected function readCellTs(): self
     {
         $this->cell['timestamp'] = $this->buffer->readLittleEndian64();
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode cell checksum buffer.
      */
-    protected function readCellChecksum(): int
+    protected function readCellChecksum(): self
     {
         $cell = $this->toCellInstance();
         $checksum = $cell->getChecksumBy($this->checksum);
@@ -182,23 +194,23 @@ class RowReader
 
         $this->rowChecksum = $this->checksum->char($checksum, $this->rowChecksum);
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode delete marker buffer.
      */
-    protected function readDeleteMarker(): int
+    protected function readDeleteMarker(): self
     {
         $this->hasDeleteMarker = true;
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
      * Decode row checksum buffer.
      */
-    protected function readRowChecksum(): int
+    protected function readRowChecksum(): self
     {
         // When reaching the row checksum tag, there's the end of the row
         // parsing phase. Before leaving, we do the final checksum for
@@ -211,7 +223,7 @@ class RowReader
             throw new RowReaderException('Row checksum mismatched.');
         }
 
-        return self::CODE_CONTINUE;
+        return $this;
     }
 
     /**
@@ -235,8 +247,15 @@ class RowReader
     /**
      * Handle the given tag.
      */
-    protected function handle(int $tag): int
+    protected function handle(?int $tag): self
     {
+        // The tag could not be resolved from the upstream which could mean
+        // the buffer is left empty. So, what about passing the torch on
+        // to the handler to let it determines what we should do next?
+        if ($tag === null) {
+            return $this;
+        }
+
         return match ($tag) {
             Tag::PK => $this->readPk(),
             Tag::ATTR => $this->readAttr(),
@@ -247,9 +266,16 @@ class RowReader
             Tag::CELL_CHECKSUM => $this->readCellChecksum(),
             Tag::DELETE_MARKER => $this->readDeleteMarker(),
             Tag::ROW_CHECKSUM => $this->readRowChecksum(),
-            0 => 1,
             default => throw new RowReaderException("Unexpected tag [$tag] occurred."),
         };
+    }
+
+    /**
+     * Determine if we should keep parsing.
+     */
+    protected function shouldKeepParsing(): bool
+    {
+        return $this->instructor === self::INSTRUCTOR_CONTINUE;
     }
 
     /**
@@ -261,7 +287,7 @@ class RowReader
 
         $this->readHeader();
 
-        while ($this->handle($this->readTag()) === self::CODE_CONTINUE) {
+        while ($this->handle($this->readTag())->shouldKeepParsing()) {
             //
         }
     }
