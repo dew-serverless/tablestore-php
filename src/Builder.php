@@ -3,6 +3,8 @@
 namespace Dew\Tablestore;
 
 use Protos\Condition;
+use Protos\GetRowRequest;
+use Protos\GetRowResponse;
 use Protos\PutRowRequest;
 use Protos\PutRowResponse;
 use Protos\ReturnContent;
@@ -27,6 +29,18 @@ class Builder
      * The returned row of the response.
      */
     protected int $returned = ReturnType::RT_PK;
+
+    /**
+     * The scoped primary keys.
+     *
+     * @var \Dew\Tablestore\Cells\Cell[]
+     */
+    protected array $wheres = [];
+
+    /**
+     * The maximal value versions retrieval.
+     */
+    protected int $takes = 1;
 
     /**
      * Create a builder.
@@ -107,6 +121,28 @@ class Builder
     }
 
     /**
+     * Filter rows by the given primary keys.
+     *
+     * @param  \Dew\Tablestore\Cells\Cell[]  $primaryKeys
+     */
+    public function where(array $primaryKeys): self
+    {
+        $this->wheres = $primaryKeys;
+
+        return $this;
+    }
+
+    /**
+     * Set the maximal value versions to retrieve.
+     */
+    public function take(int $versions): self
+    {
+        $this->takes = $versions;
+
+        return $this;
+    }
+
+    /**
      * Insert the rows to table.
      *
      * @param  \Dew\Tablestore\Cells\Cell[]  $rows
@@ -117,6 +153,16 @@ class Builder
         $this->rows = $rows;
 
         return $this->putRow();
+    }
+
+    /**
+     * Query rows from table.
+     *
+     * @return array<string, mixed>
+     */
+    public function get(): array
+    {
+        return $this->getRow();
     }
 
     /**
@@ -142,6 +188,36 @@ class Builder
         $response = new PutRowResponse;
         $response->mergeFromString(
             $this->tablestore->send('/PutRow', $request)->getBody()->getContents()
+        );
+
+        return [
+            'consumed' => [
+                'capacity_unit' => [
+                    'read' => $response->getConsumed()?->getCapacityUnit()?->getRead(),
+                    'write' => $response->getConsumed()?->getCapacityUnit()?->getWrite(),
+                ],
+            ],
+            'row' => $response->getRow() === '' ? null : $this->rowReader($response->getRow())->toArray(),
+        ];
+    }
+
+    /**
+     * Send the get row request to Tablestore.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getRow(): array
+    {
+        $row = $this->rowWriter()->addRow($this->wheres);
+
+        $request = new GetRowRequest;
+        $request->setTableName($this->table);
+        $request->setPrimaryKey($row->getBuffer());
+        $request->setMaxVersions($this->takes);
+
+        $response = new GetRowResponse;
+        $response->mergeFromString(
+            $this->tablestore->send('/GetRow', $request)->getBody()->getContents()
         );
 
         return [

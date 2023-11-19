@@ -5,12 +5,15 @@ namespace Dew\Tablestore;
 use Dew\Tablestore\Cells\Attribute;
 use Dew\Tablestore\Cells\Cell;
 use Dew\Tablestore\Cells\Tag;
+use Dew\Tablestore\Concerns\Conditionable;
 use Dew\Tablestore\Contracts\Attribute as AttributeContract;
 use Dew\Tablestore\Contracts\CalculatesChecksum;
 use Dew\Tablestore\Contracts\PrimaryKey as PrimaryKeyContract;
 
 class RowWriter
 {
+    use Conditionable;
+
     /**
      * The row checksum.
      */
@@ -48,7 +51,7 @@ class RowWriter
 
         return $this->newRow()
             ->addPk($pks)
-            ->addAttr($attrs)
+            ->when($attrs !== [], fn (): self => $this->addAttr($attrs))
             ->addDeleteMarker()
             ->addRowChecksum($this->rowChecksum);
     }
