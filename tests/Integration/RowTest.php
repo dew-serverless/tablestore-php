@@ -81,3 +81,14 @@ test('data retrieval with maximal versions', function () {
         ->and($response['row']['value'][1])->toBeInstanceOf(IntegerAttribute::class)
         ->and($response['row']['value'][1]->value())->toBe(100);
 })->depends('store data with timestamp')->skip(! integrationTestEnabled(), 'integraion test not enabled');
+
+test('data retrieval with selected columns', function () {
+    $response = tablestore()->table('testing_items')
+        ->where([PrimaryKey::string('key', 'foo')])
+        ->select(['integer', 'string'])
+        ->get();
+
+    expect($response)->toBeArray()->toHaveKeys(['consumed', 'row'])
+        ->and($response['row'])->toHaveKeys(['integer', 'string'])
+        ->and($response['row'])->not->toHaveKeys(['double', 'true', 'false', 'binary']);
+})->depends('data can be stored')->skip(! integrationTestEnabled(), 'integraion test not enabled');

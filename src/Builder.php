@@ -31,6 +31,13 @@ class Builder
     protected int $returned = ReturnType::RT_PK;
 
     /**
+     * The list of column names to retrieve with.
+     *
+     * @var string[]
+     */
+    protected array $selects = [];
+
+    /**
      * The scoped primary keys.
      *
      * @var \Dew\Tablestore\Cells\Cell[]
@@ -116,6 +123,18 @@ class Builder
     public function returned(int $type): self
     {
         $this->returned = $type;
+
+        return $this;
+    }
+
+    /**
+     * Select a list of column name to retrieve with.
+     *
+     * @param  string[]  $columns
+     */
+    public function select(array $columns = []): self
+    {
+        $this->selects = $columns;
 
         return $this;
     }
@@ -213,6 +232,7 @@ class Builder
         $request = new GetRowRequest;
         $request->setTableName($this->table);
         $request->setPrimaryKey($row->getBuffer());
+        $request->setColumnsToGet($this->selects);
         $request->setMaxVersions($this->takes);
 
         $response = new GetRowResponse;
