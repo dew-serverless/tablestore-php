@@ -6,6 +6,7 @@ use Dew\Tablestore\Cells\BooleanAttribute;
 use Dew\Tablestore\Cells\DoubleAttribute;
 use Dew\Tablestore\Cells\IntegerAttribute;
 use Dew\Tablestore\Cells\StringAttribute;
+use Dew\Tablestore\Cells\StringPrimaryKey;
 use Dew\Tablestore\PrimaryKey;
 
 test('data can be stored', function () {
@@ -19,13 +20,12 @@ test('data can be stored', function () {
         Attribute::binary('binary', 'bar'),
     ]);
 
-    expect($response)->toBeArray()
-        ->and($response)->toHaveKeys(['consumed', 'row'])
-        ->and($response['consumed']['capacity_unit']['read'])->toBe(0)
-        ->and($response['consumed']['capacity_unit']['write'])->toBe(1)
-        ->and($response['row']['key'])->toBeInstanceOf($key::class)
-        ->and($response['row']['key']->name())->toBe($key->name())
-        ->and($response['row']['key']->value())->toBe($key->value());
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1)
+        ->and($row = $response->getDecodedRow())->toBeArray()->toHaveKey('key')
+        ->and($row['key'])->toBeInstanceOf(StringPrimaryKey::class)
+        ->and($row['key']->name())->toBe($key->name())
+        ->and($row['key']->value())->toBe($key->value());
 })->skip(! integrationTestEnabled(), 'integraion test not enabled');
 
 test('store data with timestamp', function () {
@@ -33,15 +33,13 @@ test('store data with timestamp', function () {
     $lastMinute = $now->sub(new DateInterval('PT1M'));
 
     $response = tablestore()->table('testing_items')->insert([
-        $key = PrimaryKey::string('key', 'timestamps'),
+        PrimaryKey::string('key', 'timestamps'),
         Attribute::integer('value', 100)->setTimestamp($lastMinute),
         Attribute::integer('value', 200)->setTimestamp($now),
     ]);
 
-    expect($response)->toBeArray()
-        ->and($response)->toHaveKeys(['consumed', 'row'])
-        ->and($response['consumed']['capacity_unit']['read'])->toBe(0)
-        ->and($response['consumed']['capacity_unit']['write'])->toBe(1);
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
 })->skip(! integrationTestEnabled(), 'integraion test not enabled');
 
 test('data can be retrieved', function () {

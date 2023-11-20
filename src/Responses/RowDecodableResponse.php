@@ -8,7 +8,7 @@ use Dew\Tablestore\PlainbufferReader;
 use Dew\Tablestore\RowReader;
 
 /**
- * @template T of object
+ * @template T of \Google\Protobuf\Internal\Message
  *
  * @mixin T
  */

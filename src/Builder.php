@@ -166,9 +166,9 @@ class Builder
      * Insert the rows to table.
      *
      * @param  \Dew\Tablestore\Cells\Cell[]  $rows
-     * @return array<string, mixed>
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\PutRowResponse>
      */
-    public function insert(array $rows): array
+    public function insert(array $rows): RowDecodableResponse
     {
         $this->rows = $rows;
 
@@ -188,9 +188,9 @@ class Builder
     /**
      * Send the put row request to Tablestore.
      *
-     * @return array<string, mixed>
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\PutRowResponse>
      */
-    protected function putRow(): array
+    protected function putRow(): RowDecodableResponse
     {
         $row = $this->rowWriter()->addRow($this->rows);
 
@@ -206,19 +206,9 @@ class Builder
         ]));
 
         $response = new PutRowResponse;
-        $response->mergeFromString(
-            $this->tablestore->send('/PutRow', $request)->getBody()->getContents()
-        );
+        $response->mergeFromString($this->tablestore->send('/PutRow', $request)->getBody()->getContents());
 
-        return [
-            'consumed' => [
-                'capacity_unit' => [
-                    'read' => $response->getConsumed()?->getCapacityUnit()?->getRead(),
-                    'write' => $response->getConsumed()?->getCapacityUnit()?->getWrite(),
-                ],
-            ],
-            'row' => $response->getRow() === '' ? null : $this->rowReader($response->getRow())->toArray(),
-        ];
+        return new RowDecodableResponse($response);
     }
 
     /**
