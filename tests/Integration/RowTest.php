@@ -46,7 +46,9 @@ test('data can be retrieved', function () {
     $response = tablestore()->table('testing_items')->where([
         PrimaryKey::string('key', 'foo'),
     ])->get();
+
     $row = $response->getDecodedRow();
+
     expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(1)
         ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(0)
         ->and($row)->toHaveKeys(['integer', 'double', 'true', 'false', 'string', 'binary'])
@@ -68,7 +70,9 @@ test('data retrieval with maximal versions', function () {
     $response = tablestore()->table('testing_items')->where([
         PrimaryKey::string('key', 'timestamps'),
     ])->take(2)->get();
+
     $row = $response->getDecodedRow();
+
     expect($row)->toBeArray()->toHaveKey('value')
         ->and($row['value'])->toBeArray()->toHaveCount(2)
         ->and($row['value'][0])->toBeInstanceOf(IntegerAttribute::class)
@@ -82,7 +86,9 @@ test('data retrieval with selected columns', function () {
         ->where([PrimaryKey::string('key', 'foo')])
         ->select(['integer', 'string'])
         ->get();
+
     $row = $response->getDecodedRow();
+
     expect($row)->toBeArray()->toHaveKeys(['integer', 'string'])
         ->and($row)->not->toHaveKeys(['double', 'true', 'false', 'binary']);
 })->depends('data can be stored')->skip(! integrationTestEnabled(), 'integration test not enabled');
