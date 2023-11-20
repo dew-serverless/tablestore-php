@@ -2,7 +2,11 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Responses\RowDecodableResponse;
+use Google\Protobuf\Internal\Message;
 use Protos\Condition;
+use Protos\GetRowRequest;
+use Protos\GetRowResponse;
 use Protos\PutRowRequest;
 use Protos\PutRowResponse;
 use Protos\ReturnContent;
@@ -27,6 +31,25 @@ class Builder
      * The returned row of the response.
      */
     protected int $returned = ReturnType::RT_PK;
+
+    /**
+     * The list of column names to retrieve with.
+     *
+     * @var string[]
+     */
+    protected array $selects = [];
+
+    /**
+     * The scoped primary keys.
+     *
+     * @var \Dew\Tablestore\Cells\Cell[]
+     */
+    protected array $wheres = [];
+
+    /**
+     * The maximal value versions retrieval.
+     */
+    protected int $takes = 1;
 
     /**
      * Create a builder.
@@ -107,12 +130,46 @@ class Builder
     }
 
     /**
+     * Select a list of column name to retrieve with.
+     *
+     * @param  string[]  $columns
+     */
+    public function select(array $columns = []): self
+    {
+        $this->selects = $columns;
+
+        return $this;
+    }
+
+    /**
+     * Filter rows by the given primary keys.
+     *
+     * @param  \Dew\Tablestore\Cells\Cell[]  $primaryKeys
+     */
+    public function where(array $primaryKeys): self
+    {
+        $this->wheres = $primaryKeys;
+
+        return $this;
+    }
+
+    /**
+     * Set the maximal value versions to retrieve.
+     */
+    public function take(int $versions): self
+    {
+        $this->takes = $versions;
+
+        return $this;
+    }
+
+    /**
      * Insert the rows to table.
      *
      * @param  \Dew\Tablestore\Cells\Cell[]  $rows
-     * @return array<string, mixed>
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\PutRowResponse>
      */
-    public function insert(array $rows): array
+    public function insert(array $rows): RowDecodableResponse
     {
         $this->rows = $rows;
 
@@ -120,11 +177,21 @@ class Builder
     }
 
     /**
+     * Query rows from table.
+     *
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\GetRowResponse>
+     */
+    public function get(): RowDecodableResponse
+    {
+        return $this->getRow();
+    }
+
+    /**
      * Send the put row request to Tablestore.
      *
-     * @return array<string, mixed>
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\PutRowResponse>
      */
-    protected function putRow(): array
+    protected function putRow(): RowDecodableResponse
     {
         $row = $this->rowWriter()->addRow($this->rows);
 
@@ -140,19 +207,30 @@ class Builder
         ]));
 
         $response = new PutRowResponse;
-        $response->mergeFromString(
-            $this->tablestore->send('/PutRow', $request)->getBody()->getContents()
-        );
+        $response->mergeFromString($this->send('/PutRow', $request));
 
-        return [
-            'consumed' => [
-                'capacity_unit' => [
-                    'read' => $response->getConsumed()?->getCapacityUnit()?->getRead(),
-                    'write' => $response->getConsumed()?->getCapacityUnit()?->getWrite(),
-                ],
-            ],
-            'row' => $response->getRow() === '' ? null : $this->rowReader($response->getRow())->toArray(),
-        ];
+        return new RowDecodableResponse($response);
+    }
+
+    /**
+     * Send the get row request to Tablestore.
+     *
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\GetRowResponse>
+     */
+    protected function getRow(): RowDecodableResponse
+    {
+        $row = $this->rowWriter()->addRow($this->wheres);
+
+        $request = new GetRowRequest;
+        $request->setTableName($this->table);
+        $request->setPrimaryKey($row->getBuffer());
+        $request->setColumnsToGet($this->selects);
+        $request->setMaxVersions($this->takes);
+
+        $response = new GetRowResponse;
+        $response->mergeFromString($this->send('/GetRow', $request));
+
+        return new RowDecodableResponse($response);
     }
 
     /**
@@ -182,10 +260,12 @@ class Builder
     }
 
     /**
-     * Make a new row reader.
+     * Communicate with Tablestore with the given message.
      */
-    protected function rowReader(string $buffer): RowReader
+    protected function send(string $endpoint, Message $message): string
     {
-        return new RowReader(new PlainbufferReader($buffer), new Crc);
+        return $this->tablestore->send($endpoint, $message)
+            ->getBody()
+            ->getContents();
     }
 }

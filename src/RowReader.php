@@ -190,7 +190,7 @@ class RowReader
         // When reaching the cell checksum tag, there is the last stage where
         // we can process the cell data. After validating the integrity of
         // the cell, we could confidently append it to the decoded data.
-        $this->data[$cell->name()] = $cell;
+        $this->append($cell);
 
         $this->rowChecksum = $this->checksum->char($checksum, $this->rowChecksum);
 
@@ -242,6 +242,26 @@ class RowReader
         }
 
         return $cell;
+    }
+
+    /**
+     * Append the cell to the decoded data.
+     */
+    protected function append(Cell $cell): self
+    {
+        // Since an attribute might contain multiple value versions, keeping
+        // a fixed data structure–a list ensures data consistency even if
+        // the one has only one version. The newer version comes first.
+        if ($cell instanceof Contracts\Attribute) {
+            $this->data[$cell->name()] ??= [];
+            $this->data[$cell->name()][] = $cell;
+
+            return $this;
+        }
+
+        $this->data[$cell->name()] = $cell;
+
+        return $this;
     }
 
     /**

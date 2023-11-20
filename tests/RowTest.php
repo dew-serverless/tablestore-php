@@ -52,7 +52,7 @@ it('has attribute', function ($attr) {
     $result = $reader->toArray();
     expect($result)->toBeArray()->and($result)->toHaveKey($attr->name());
     /** @var \Dew\Tablestore\Cells\Cell $cell */
-    $cell = $result[$attr->name()];
+    $cell = $result[$attr->name()][0];
     expect($cell)->toBeInstanceOf(Cell::class)
         ->and($cell)->toBeInstanceOf(AttributeContract::class)
         ->and($cell->name())->toBe($attr->name())
@@ -91,7 +91,7 @@ test('add row', function () {
     expect($result)->toBeArray()
         ->and($result)->toHaveKeys(['key', 'value'])
         ->and($result['key'])->toBeInstanceOf(PrimaryKeyContract::class)
-        ->and($result['value'])->toBeInstanceOf(AttributeContract::class);
+        ->and($result['value'][0])->toBeInstanceOf(AttributeContract::class);
 });
 
 test('attribute with timestamp', function () {
@@ -105,6 +105,6 @@ test('attribute with timestamp', function () {
     $result = $reader->toArray();
     expect($result)->toBeArray()
         ->and($result)->toHaveKey('value')
-        ->and($result['value'])->toBeInstanceOf(AttributeContract::class)
-        ->and($result['value']->getTimestamp())->toBe((int) $now->format('Uv'));
+        ->and($result['value'][0])->toBeInstanceOf(AttributeContract::class)
+        ->and($result['value'][0]->getTimestamp())->toBe((int) $now->format('Uv'));
 });
