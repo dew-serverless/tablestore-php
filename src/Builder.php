@@ -12,6 +12,8 @@ use Protos\PutRowResponse;
 use Protos\ReturnContent;
 use Protos\ReturnType;
 use Protos\RowExistenceExpectation;
+use Protos\UpdateRowRequest;
+use Protos\UpdateRowResponse;
 
 class Builder
 {
@@ -177,6 +179,17 @@ class Builder
     }
 
     /**
+     * Modify the existing attributes in table.
+     *
+     * @param  \Dew\Tablestore\Cells\Cell[]  $attributes
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\UpdateRowResponse>
+     */
+    public function update(array $attributes): RowDecodableResponse
+    {
+        return $this->updateRow($attributes);
+    }
+
+    /**
      * Query rows from table.
      *
      * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\GetRowResponse>
@@ -208,6 +221,30 @@ class Builder
 
         $response = new PutRowResponse;
         $response->mergeFromString($this->send('/PutRow', $request));
+
+        return new RowDecodableResponse($response);
+    }
+
+    /**
+     * Send the update row request to Tablestore.
+     *
+     * @param  \Dew\Tablestore\Cells\Cell[]  $attributes
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\UpdateRowResponse>
+     */
+    public function updateRow(array $attributes): RowDecodableResponse
+    {
+        $row = $this->rowWriter()->addRow([...$this->wheres, ...$attributes]);
+
+        $condition = new Condition;
+        $condition->setRowExistence($this->expectation);
+
+        $request = new UpdateRowRequest;
+        $request->setTableName($this->table);
+        $request->setRowChange($row->getBuffer());
+        $request->setCondition($condition);
+
+        $response = new UpdateRowResponse;
+        $response->mergeFromString($this->send('/UpdateRow', $request));
 
         return new RowDecodableResponse($response);
     }

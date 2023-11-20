@@ -92,3 +92,20 @@ test('data retrieval with selected columns', function () {
     expect($row)->toBeArray()->toHaveKeys(['integer', 'string'])
         ->and($row)->not->toHaveKeys(['double', 'true', 'false', 'binary']);
 })->depends('data can be stored')->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('data can be updated', function () {
+    $response = tablestore()->table('testing_items')
+        ->where([PrimaryKey::string('key', 'foo')])
+        ->update([
+            Attribute::integer('integer', 200),
+            Attribute::double('double', 2.71828),
+            Attribute::boolean('true', false),
+            Attribute::boolean('false', true),
+            Attribute::string('string', 'hello'),
+            Attribute::binary('binary', 'world'),
+        ]);
+
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1)
+        ->and($response->getDecodedRow())->toBeNull();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
