@@ -26,7 +26,7 @@ test('data can be stored', function () {
         ->and($row['key'])->toBeInstanceOf(StringPrimaryKey::class)
         ->and($row['key']->name())->toBe($key->name())
         ->and($row['key']->value())->toBe($key->value());
-})->skip(! integrationTestEnabled(), 'integraion test not enabled');
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('store data with timestamp', function () {
     $now = new DateTimeImmutable;
@@ -40,7 +40,7 @@ test('store data with timestamp', function () {
 
     expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
         ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
-})->skip(! integrationTestEnabled(), 'integraion test not enabled');
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('data can be retrieved', function () {
     $response = tablestore()->table('testing_items')->where([
@@ -62,7 +62,7 @@ test('data can be retrieved', function () {
         ->and($row['string'][0]->value())->toBe('foo')
         ->and($row['binary'][0])->toBeInstanceOf(BinaryAttribute::class)
         ->and($row['binary'][0]->value())->toBe('bar');
-})->depends('data can be stored')->skip(! integrationTestEnabled(), 'integraion test not enabled');
+})->depends('data can be stored')->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('data retrieval with maximal versions', function () {
     $response = tablestore()->table('testing_items')->where([
@@ -75,7 +75,7 @@ test('data retrieval with maximal versions', function () {
         ->and($row['value'][0]->value())->toBe(200)
         ->and($row['value'][1])->toBeInstanceOf(IntegerAttribute::class)
         ->and($row['value'][1]->value())->toBe(100);
-})->depends('store data with timestamp')->skip(! integrationTestEnabled(), 'integraion test not enabled');
+})->depends('store data with timestamp')->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('data retrieval with selected columns', function () {
     $response = tablestore()->table('testing_items')
@@ -85,4 +85,4 @@ test('data retrieval with selected columns', function () {
     $row = $response->getDecodedRow();
     expect($row)->toBeArray()->toHaveKeys(['integer', 'string'])
         ->and($row)->not->toHaveKeys(['double', 'true', 'false', 'binary']);
-})->depends('data can be stored')->skip(! integrationTestEnabled(), 'integraion test not enabled');
+})->depends('data can be stored')->skip(! integrationTestEnabled(), 'integration test not enabled');
