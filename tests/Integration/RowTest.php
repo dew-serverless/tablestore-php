@@ -165,3 +165,33 @@ test('update with attribute all versions deletion', function () {
 
     expect($row)->toBeArray()->not->toHaveKey('integer');
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('update with increment operation', function () {
+    // prepare the testing data
+    tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'test-counter'),
+        Attribute::integer('value', 0),
+    ]);
+
+    // apply increment operation
+    $increment = function ($key): void {
+        $response = tablestore()->table('testing_items')->where([$key])->update([
+            Attribute::integer('value', 1)->increment(),
+        ]);
+
+        expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(1)
+            ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
+    };
+
+    // apply one more time to ensure we're not only overriding the value
+    $increment($key);
+    $increment($key);
+
+    // validate the incremented value
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    $row = $response->getDecodedRow();
+
+    expect($row)->toBeArray()->toHaveKey('value')
+        ->and($row['value'][0])->toBeInstanceOf(IntegerAttribute::class)
+        ->and($row['value'][0]->value())->toBe(2);
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
