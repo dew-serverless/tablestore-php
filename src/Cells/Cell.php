@@ -57,8 +57,20 @@ abstract class Cell
     {
         $checksum = $calculator->string($this->name(), 0);
 
+        if (! $this->shouldChecksumValue()) {
+            return $checksum;
+        }
+
         $checksum = $calculator->char($this->type(), $checksum);
 
         return $this->getValueChecksumBy($calculator, $checksum);
+    }
+
+    /**
+     * Determine if the cell value should be included in checksum.
+     */
+    protected function shouldChecksumValue(): bool
+    {
+        return ! $this instanceof DeleteAttribute;
     }
 }

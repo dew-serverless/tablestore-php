@@ -124,6 +124,10 @@ class RowWriter
             $this->addCellValue($cell);
         }
 
+        if ($cell instanceof Attribute && $cell->getOperation() !== null) {
+            $this->addCellOp($cell->getOperation());
+        }
+
         if ($cell instanceof Attribute && $cell->getTimestamp() !== null) {
             $this->addCellTs($cell->getTimestamp());
         }
@@ -176,6 +180,23 @@ class RowWriter
     {
         $this->buffer->writeChar(Tag::CELL_TS);
         $this->buffer->writeLittleEndian64($timestamp);
+
+        return $this;
+    }
+
+    /**
+     * Encode the cell operation.
+     *
+     * cell_op = tag_cell_op cell_op_value
+     * cell_op_value = delete_all_version | delete_one_version | increment
+     * delete_all_version = 0x01 (1byte)
+     * delete_one_version = 0x03 (1byte)
+     * increment = 0x04 (1byte)
+     */
+    public function addCellOp(int $operation): self
+    {
+        $this->buffer->writeChar(Tag::CELL_OP);
+        $this->buffer->writeChar($operation);
 
         return $this;
     }
