@@ -207,7 +207,7 @@ class Builder
         ]));
 
         $response = new PutRowResponse;
-        $response->mergeFromString($this->tablestore->send('/PutRow', $request)->getBody()->getContents());
+        $response->mergeFromString($this->send('/PutRow', $request));
 
         return new RowDecodableResponse($response);
     }
@@ -228,7 +228,7 @@ class Builder
         $request->setMaxVersions($this->takes);
 
         $response = new GetRowResponse;
-        $response->mergeFromString($this->tablestore->send('/GetRow', $request)->getBody()->getContents());
+        $response->mergeFromString($this->send('/GetRow', $request));
 
         return new RowDecodableResponse($response);
     }
@@ -257,5 +257,15 @@ class Builder
         $row = new RowWriter(new PlainbufferWriter, new Crc);
 
         return $row->writeHeader();
+    }
+
+    /**
+     * Communicate with Tablestore with the given message.
+     */
+    protected function send(string $endpoint, Message $message): string
+    {
+        return $this->tablestore->send($endpoint, $message)
+            ->getBody()
+            ->getContents();
     }
 }
