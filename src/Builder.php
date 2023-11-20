@@ -3,6 +3,7 @@
 namespace Dew\Tablestore;
 
 use Dew\Tablestore\Responses\RowDecodableResponse;
+use Google\Protobuf\Internal\Message;
 use Protos\Condition;
 use Protos\GetRowRequest;
 use Protos\GetRowResponse;
@@ -256,13 +257,5 @@ class Builder
         $row = new RowWriter(new PlainbufferWriter, new Crc);
 
         return $row->writeHeader();
-    }
-
-    /**
-     * Make a new row reader.
-     */
-    protected function rowReader(string $buffer): RowReader
-    {
-        return new RowReader(new PlainbufferReader($buffer), new Crc);
     }
 }
