@@ -2,7 +2,9 @@
 
 namespace Dew\Tablestore\Cells;
 
-class IntegerAttribute extends Attribute
+use Dew\Tablestore\Contracts\HasValue;
+
+class IntegerAttribute extends Attribute implements HasValue
 {
     use IsIntegerCell;
 }

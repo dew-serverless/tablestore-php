@@ -8,6 +8,7 @@ use Dew\Tablestore\Cells\Tag;
 use Dew\Tablestore\Concerns\Conditionable;
 use Dew\Tablestore\Contracts\Attribute as AttributeContract;
 use Dew\Tablestore\Contracts\CalculatesChecksum;
+use Dew\Tablestore\Contracts\HasValue;
 use Dew\Tablestore\Contracts\PrimaryKey as PrimaryKeyContract;
 
 class RowWriter
@@ -120,7 +121,7 @@ class RowWriter
 
         $this->addCellName($cell);
 
-        if ($cell->value() !== null) {
+        if ($cell instanceof HasValue) {
             $this->addCellValue($cell);
         }
 
@@ -161,7 +162,7 @@ class RowWriter
      *
      * cell_value = tag_cell_value formatted_value
      */
-    public function addCellValue(Cell $cell): self
+    public function addCellValue(HasValue $cell): self
     {
         $this->buffer->writeChar(Tag::CELL_VALUE);
 

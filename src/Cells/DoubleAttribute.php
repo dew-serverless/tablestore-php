@@ -2,7 +2,9 @@
 
 namespace Dew\Tablestore\Cells;
 
-class DoubleAttribute extends Attribute
+use Dew\Tablestore\Contracts\HasValue;
+
+class DoubleAttribute extends Attribute implements HasValue
 {
     use IsDoubleCell;
 }
