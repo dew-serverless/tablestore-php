@@ -23,6 +23,22 @@ class Attribute
     }
 
     /**
+     * Create an integer attribute with incrementing value.
+     */
+    public static function increment(string $name, int $increment = 1): IntegerAttribute
+    {
+        return (new IntegerAttribute($name, $increment))->increment();
+    }
+
+    /**
+     * Create an integer attribute with decrementing value.
+     */
+    public static function decrement(string $name, int $decrement = 1): IntegerAttribute
+    {
+        return (new IntegerAttribute($name, -$decrement))->increment();
+    }
+
+    /**
      * Create a double attribute.
      */
     public static function double(string $name, float $value): DoubleAttribute
