@@ -22,11 +22,9 @@ class BatchBuilder
     protected array $wheres = [];
 
     /**
-     * The collected cells.
-     *
-     * @var \Dew\Tablestore\Cells\Cell[]
+     * The row writer.
      */
-    protected array $cells = [];
+    protected RowWriter $row;
 
     /**
      * Create a batch builder.
@@ -57,18 +55,27 @@ class BatchBuilder
     public function insert(array $cells): void
     {
         $this->operation = OperationType::PUT;
-        $this->cells = $cells;
+        $this->row = $this->newRow()->addRow($cells);
     }
 
     /**
      * Modify the existing attributes in table.
      *
-     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\Attribute)[]  $cells
+     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\Attribute)[]  $attributes
      */
-    public function update(array $cells): void
+    public function update(array $attributes): void
     {
         $this->operation = OperationType::UPDATE;
-        $this->cells = $cells;
+        $this->row = $this->newRow()->addRow([...$this->wheres, ...$attributes]);
+    }
+
+    /**
+     * Remove the row from table.
+     */
+    public function delete(): void
+    {
+        $this->operation = OperationType::DELETE;
+        $this->row = $this->newRow()->deleteRow($this->wheres);
     }
 
     /**
@@ -76,18 +83,25 @@ class BatchBuilder
      */
     public function toRequest(): RowInBatchWriteRowRequest
     {
-        $row = new RowWriter(new PlainbufferWriter, new Crc);
-        $row->writeHeader()->addRow([...$this->wheres, ...$this->cells]);
-
         $condition = new Condition;
         $condition->setRowExistence(RowExistenceExpectation::IGNORE);
 
         $request = new RowInBatchWriteRowRequest;
         $request->setType($this->operation);
-        $request->setRowChange($row->getBuffer());
+        $request->setRowChange($this->row->getBuffer());
         $request->setCondition($condition);
 
         return $request;
+    }
+
+    /**
+     * Make a new row writer.
+     */
+    protected function newRow(): RowWriter
+    {
+        $row = new RowWriter(new PlainbufferWriter, new Crc);
+
+        return $row->writeHeader();
     }
 
     /**

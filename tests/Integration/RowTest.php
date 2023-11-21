@@ -252,3 +252,18 @@ test('batch write updates multiple rows', function () {
     expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
         ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch write deletes multiple rows', function () {
+    $response = tablestore()->batch(function ($builder) {
+        $builder->table('testing_items')->where([
+            PrimaryKey::string('key', 'batch-write-1'),
+        ])->delete();
+
+        $builder->table('testing_items')->where([
+            PrimaryKey::string('key', 'batch-write-2'),
+        ])->delete();
+    })->write();
+
+    expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
