@@ -53,7 +53,20 @@ class RowWriter
         return $this->newRow()
             ->addPk($pks)
             ->when($attrs !== [], fn (): self => $this->addAttr($attrs))
-            ->addDeleteMarker()
+            ->addDeleteMarker(false)
+            ->addRowChecksum($this->rowChecksum);
+    }
+
+    /**
+     * Encode the row for deletion.
+     *
+     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]  $pks
+     */
+    public function deleteRow(array $pks): self
+    {
+        return $this->newRow()
+            ->addPk($pks)
+            ->addDeleteMarker(true)
             ->addRowChecksum($this->rowChecksum);
     }
 
@@ -218,12 +231,13 @@ class RowWriter
     /**
      * Encode the delete marker.
      */
-    public function addDeleteMarker(): self
+    public function addDeleteMarker(bool $isDeleteRow): self
     {
-        // TODO: Determine if the row contains delete request.
-        $delete = (int) false;
+        if ($isDeleteRow) {
+            $this->buffer->writeChar(Tag::DELETE_MARKER);
+        }
 
-        $this->rowChecksum = $this->checksum->char($delete, $this->rowChecksum);
+        $this->rowChecksum = $this->checksum->char((int) $isDeleteRow, $this->rowChecksum);
 
         return $this;
     }
