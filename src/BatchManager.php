@@ -44,7 +44,7 @@ class BatchManager
     public function write(): BatchWriteRowResponse
     {
         $request = new BatchWriteRowRequest;
-        $request->setTables($this->buildTables());
+        $request->setTables($this->buildTablesForWrite());
 
         $response = new BatchWriteRowResponse;
         $response->mergeFromString(
@@ -76,11 +76,11 @@ class BatchManager
     }
 
     /**
-     * Build table changes requests from the changes bag.
+     * Build tables for data changes.
      *
      * @return \Protos\TableInBatchWriteRowRequest[]
      */
-    protected function buildTables(): array
+    protected function buildTablesForWrite(): array
     {
         $tables = [];
 
