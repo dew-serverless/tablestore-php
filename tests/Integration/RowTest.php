@@ -216,3 +216,20 @@ test('delete removes the row', function () {
     $response = tablestore()->table('testing_items')->where([$key])->get();
     expect($response->getDecodedRow())->toBeNull();
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch write writes multiple rows', function () {
+    $response = tablestore()->batch(function ($builder) {
+        $builder->table('testing_items')->insert([
+            PrimaryKey::string('key', 'batch-write-1'),
+            Attribute::string('value', 'foo'),
+        ]);
+
+        $builder->table('testing_items')->insert([
+            PrimaryKey::string('key', 'batch-write-2'),
+            Attribute::string('value', 'foo'),
+        ]);
+    })->write();
+
+    expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');

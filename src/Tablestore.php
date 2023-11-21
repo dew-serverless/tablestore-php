@@ -70,6 +70,18 @@ class Tablestore
     }
 
     /**
+     * Create a builder for multiple data manipulation.
+     *
+     * @param  callable(\Dew\Tablestore\BatchChanges): void  $callback
+     */
+    public function batch(callable $callback): BatchManager
+    {
+        $callback($bag = new BatchChanges);
+
+        return new BatchManager($this, $bag);
+    }
+
+    /**
      * Send the HTTP request.
      */
     public function send(string $endpoint, Message $message): ResponseInterface
