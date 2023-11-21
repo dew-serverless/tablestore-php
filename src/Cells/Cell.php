@@ -3,8 +3,7 @@
 namespace Dew\Tablestore\Cells;
 
 use Dew\Tablestore\Contracts\CalculatesChecksum;
-use Dew\Tablestore\PlainbufferReader;
-use Dew\Tablestore\PlainbufferWriter;
+use Dew\Tablestore\Contracts\HasValue;
 
 abstract class Cell
 {
@@ -22,43 +21,28 @@ abstract class Cell
     }
 
     /**
-     * The value of the cell.
-     */
-    abstract public function value(): mixed;
-
-    /**
-     * The value type of the cell.
-     */
-    abstract public function type(): int;
-
-    /**
-     * Get value from the formatted value in buffer.
-     */
-    abstract public static function fromFormattedValue(PlainbufferReader $buffer): mixed;
-
-    /**
-     * Build formatted value to buffer.
-     *
-     * formatted_value = value_type value_len value_data
-     * value_type = int8
-     * value_len = int32
-     */
-    abstract public function toFormattedValue(PlainbufferWriter $buffer): void;
-
-    /**
-     * Calculate checksum for the cell value.
-     */
-    abstract public function getValueChecksumBy(CalculatesChecksum $calculator, int $checksum): int;
-
-    /**
      * Calculate checksum for the cell.
      */
     public function getChecksumBy(CalculatesChecksum $calculator): int
     {
         $checksum = $calculator->string($this->name(), 0);
 
+        if (! $this->shouldChecksumValue()) {
+            return $checksum;
+        }
+
         $checksum = $calculator->char($this->type(), $checksum);
 
         return $this->getValueChecksumBy($calculator, $checksum);
+    }
+
+    /**
+     * Determine if the cell value should be included in checksum.
+     *
+     * @phpstan-assert-if-true \Dew\Tablestore\Contracts\HasValue $this
+     */
+    protected function shouldChecksumValue(): bool
+    {
+        return $this instanceof HasValue;
     }
 }

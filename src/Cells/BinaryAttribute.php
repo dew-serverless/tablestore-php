@@ -2,7 +2,9 @@
 
 namespace Dew\Tablestore\Cells;
 
-class BinaryAttribute extends Attribute
+use Dew\Tablestore\Contracts\HasValue;
+
+class BinaryAttribute extends Attribute implements HasValue
 {
     use IsBinaryCell;
 }

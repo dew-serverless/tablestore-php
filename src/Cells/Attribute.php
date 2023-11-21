@@ -14,6 +14,11 @@ abstract class Attribute extends Cell implements AttributeContract
     protected ?int $timestamp = null;
 
     /**
+     * The operation applied to the cell.
+     */
+    protected ?int $operation = null;
+
+    /**
      * Set the timestamp of the cell.
      */
     public function setTimestamp(DateTimeInterface|int $timestamp): self
@@ -36,6 +41,24 @@ abstract class Attribute extends Cell implements AttributeContract
     }
 
     /**
+     * Set operation to the cell.
+     */
+    protected function setOperation(int $type): self
+    {
+        $this->operation = $type;
+
+        return $this;
+    }
+
+    /**
+     * Get the operation applied to the cell.
+     */
+    public function getOperation(): ?int
+    {
+        return $this->operation;
+    }
+
+    /**
      * Calculate checksum for the cell.
      */
     public function getChecksumBy(CalculatesChecksum $calculator): int
@@ -43,7 +66,11 @@ abstract class Attribute extends Cell implements AttributeContract
         $checksum = parent::getChecksumBy($calculator);
 
         if ($this->getTimestamp() !== null) {
-            return $calculator->int64($this->getTimestamp(), $checksum);
+            $checksum = $calculator->int64($this->getTimestamp(), $checksum);
+        }
+
+        if ($this->getOperation() !== null) {
+            return $calculator->char($this->getOperation(), $checksum);
         }
 
         return $checksum;

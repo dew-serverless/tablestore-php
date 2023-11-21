@@ -8,6 +8,7 @@ use Dew\Tablestore\Cells\Tag;
 use Dew\Tablestore\Concerns\Conditionable;
 use Dew\Tablestore\Contracts\Attribute as AttributeContract;
 use Dew\Tablestore\Contracts\CalculatesChecksum;
+use Dew\Tablestore\Contracts\HasValue;
 use Dew\Tablestore\Contracts\PrimaryKey as PrimaryKeyContract;
 
 class RowWriter
@@ -120,8 +121,12 @@ class RowWriter
 
         $this->addCellName($cell);
 
-        if ($cell->value() !== null) {
+        if ($cell instanceof HasValue) {
             $this->addCellValue($cell);
+        }
+
+        if ($cell instanceof Attribute && $cell->getOperation() !== null) {
+            $this->addCellOp($cell->getOperation());
         }
 
         if ($cell instanceof Attribute && $cell->getTimestamp() !== null) {
@@ -157,7 +162,7 @@ class RowWriter
      *
      * cell_value = tag_cell_value formatted_value
      */
-    public function addCellValue(Cell $cell): self
+    public function addCellValue(HasValue $cell): self
     {
         $this->buffer->writeChar(Tag::CELL_VALUE);
 
@@ -176,6 +181,23 @@ class RowWriter
     {
         $this->buffer->writeChar(Tag::CELL_TS);
         $this->buffer->writeLittleEndian64($timestamp);
+
+        return $this;
+    }
+
+    /**
+     * Encode the cell operation.
+     *
+     * cell_op = tag_cell_op cell_op_value
+     * cell_op_value = delete_all_version | delete_one_version | increment
+     * delete_all_version = 0x01 (1byte)
+     * delete_one_version = 0x03 (1byte)
+     * increment = 0x04 (1byte)
+     */
+    public function addCellOp(int $operation): self
+    {
+        $this->buffer->writeChar(Tag::CELL_OP);
+        $this->buffer->writeChar($operation);
 
         return $this;
     }

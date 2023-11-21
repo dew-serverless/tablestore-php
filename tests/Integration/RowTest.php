@@ -92,3 +92,106 @@ test('data retrieval with selected columns', function () {
     expect($row)->toBeArray()->toHaveKeys(['integer', 'string'])
         ->and($row)->not->toHaveKeys(['double', 'true', 'false', 'binary']);
 })->depends('data can be stored')->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('data can be updated', function () {
+    $response = tablestore()->table('testing_items')
+        ->where([PrimaryKey::string('key', 'foo')])
+        ->update([
+            Attribute::integer('integer', 200),
+            Attribute::double('double', 2.71828),
+            Attribute::boolean('true', false),
+            Attribute::boolean('false', true),
+            Attribute::string('string', 'hello'),
+            Attribute::binary('binary', 'world'),
+        ]);
+
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1)
+        ->and($response->getDecodedRow())->toBeNull();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('update with attribute version deletion', function () {
+    $now = new DateTimeImmutable;
+    $lastMinute = $now->sub(new DateInterval('PT1M'));
+
+    // prepare the testing data
+    tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'test-delete-one-version'),
+        Attribute::integer('integer', 100)->setTimestamp($lastMinute),
+        Attribute::integer('integer', 200)->setTimestamp($now),
+    ]);
+
+    // delete the version "now"
+    $response = tablestore()->table('testing_items')->where([$key])->update([
+        Attribute::delete('integer')->version($now),
+    ]);
+
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
+
+    // validate the version "now" is missing
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    $row = $response->getDecodedRow();
+
+    expect($row)->toBeArray()->toHaveKey('integer')
+        ->and($row['integer'])->toBeArray()->toHaveCount(1)
+        ->and($row['integer'][0])->toBeInstanceOf(IntegerAttribute::class)
+        ->and($row['integer'][0]->value())->toBe(100)
+        ->and($row['integer'][0]->getTimestamp())->toBe((int) $lastMinute->format('Uv'));
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('update with attribute all versions deletion', function () {
+    $now = new DateTimeImmutable;
+    $lastMinute = $now->sub(new DateInterval('PT1M'));
+
+    // prepare the testing data
+    tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'test-delete-all-versions'),
+        Attribute::integer('integer', 100)->setTimestamp($lastMinute),
+        Attribute::integer('integer', 200)->setTimestamp($now),
+    ]);
+
+    // delete all versions
+    $response = tablestore()->table('testing_items')->where([$key])->update([
+        Attribute::delete('integer')->all(),
+    ]);
+
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
+
+    // validate the attribute is missing
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    $row = $response->getDecodedRow();
+
+    expect($row)->toBeArray()->not->toHaveKey('integer');
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('update with increment operation', function () {
+    // prepare the testing data
+    tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'test-counter'),
+        Attribute::integer('value', 0),
+    ]);
+
+    // apply increment operation
+    $increment = function ($key): void {
+        $response = tablestore()->table('testing_items')->where([$key])->update([
+            Attribute::integer('value', 1)->increment(),
+        ]);
+
+        expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(1)
+            ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
+    };
+
+    // apply one more time to ensure we're not only overriding the value
+    $increment($key);
+    $increment($key);
+
+    // validate the incremented value
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    $row = $response->getDecodedRow();
+
+    expect($row)->toBeArray()->toHaveKey('value')
+        ->and($row['value'][0])->toBeInstanceOf(IntegerAttribute::class)
+        ->and($row['value'][0]->value())->toBe(2);
+})->skip(! integrationTestEnabled(), 'integration test not enabled');

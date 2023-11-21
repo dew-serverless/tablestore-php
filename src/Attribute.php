@@ -2,8 +2,10 @@
 
 namespace Dew\Tablestore;
 
+use DateTimeInterface;
 use Dew\Tablestore\Cells\BinaryAttribute;
 use Dew\Tablestore\Cells\BooleanAttribute;
+use Dew\Tablestore\Cells\DeleteAttribute;
 use Dew\Tablestore\Cells\DoubleAttribute;
 use Dew\Tablestore\Cells\IntegerAttribute;
 use Dew\Tablestore\Cells\StringAttribute;
@@ -18,6 +20,22 @@ class Attribute
     public static function integer(string $name, int $value): IntegerAttribute
     {
         return new IntegerAttribute($name, $value);
+    }
+
+    /**
+     * Create an integer attribute with incrementing value.
+     */
+    public static function increment(string $name, int $increment = 1): IntegerAttribute
+    {
+        return (new IntegerAttribute($name, $increment))->increment();
+    }
+
+    /**
+     * Create an integer attribute with decrementing value.
+     */
+    public static function decrement(string $name, int $decrement = 1): IntegerAttribute
+    {
+        return (new IntegerAttribute($name, -$decrement))->increment();
     }
 
     /**
@@ -50,6 +68,16 @@ class Attribute
     public static function binary(string $name, string $value): BinaryAttribute
     {
         return new BinaryAttribute($name, $value);
+    }
+
+    /**
+     * Create an awaiting deletion attribute.
+     */
+    public static function delete(string $name, DateTimeInterface|int $timestamp = null): DeleteAttribute
+    {
+        $attribute = new DeleteAttribute($name);
+
+        return $timestamp === null ? $attribute->all() : $attribute->version($timestamp);
     }
 
     /**
