@@ -48,6 +48,14 @@ class BatchBuilder
     }
 
     /**
+     * Query rows from table.
+     */
+    public function get(): void
+    {
+        $this->row = $this->newRow()->addRow($this->wheres);
+    }
+
+    /**
      * Insert the row to table.
      *
      * @param  \Dew\Tablestore\Cells\Cell[]  $cells
@@ -102,6 +110,14 @@ class BatchBuilder
         $row = new RowWriter(new PlainbufferWriter, new Crc);
 
         return $row->writeHeader();
+    }
+
+    /**
+     * The row writer.
+     */
+    public function getRow(): RowWriter
+    {
+        return $this->row;
     }
 
     /**

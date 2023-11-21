@@ -2,9 +2,12 @@
 
 namespace Dew\Tablestore;
 
+use Protos\BatchGetRowRequest;
+use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowRequest;
 use Protos\BatchWriteRowResponse;
 use Protos\RowInBatchWriteRowRequest;
+use Protos\TableInBatchGetRowRequest;
 use Protos\TableInBatchWriteRowRequest;
 
 class BatchManager
@@ -17,6 +20,22 @@ class BatchManager
         protected BatchChanges $bag
     ) {
         //
+    }
+
+    /**
+     * Get the rows.
+     */
+    public function read(): BatchGetRowResponse
+    {
+        $request = new BatchGetRowRequest;
+        $request->setTables($this->buildTablesForRead());
+
+        $response = new BatchGetRowResponse;
+        $response->mergeFromString(
+            $this->tablestore->send('/BatchGetRow', $request)->getBody()->getContents()
+        );
+
+        return $response;
     }
 
     /**
@@ -33,6 +52,27 @@ class BatchManager
         );
 
         return $response;
+    }
+
+    /**
+     * Build tables for retrieving multiple rows.
+     *
+     * @return \Protos\TableInBatchGetRowRequest[]
+     */
+    protected function buildTablesForRead(): array
+    {
+        $tables = [];
+
+        foreach ($this->bag->getTables() as $table => $changes) {
+            $request = new TableInBatchGetRowRequest;
+            $request->setTableName($table);
+            $request->setPrimaryKey(array_map(fn ($builder): string => $builder->getRow()->getBuffer(), $changes));
+            $request->setMaxVersions(1);
+
+            $tables[] = $request;
+        }
+
+        return $tables;
     }
 
     /**

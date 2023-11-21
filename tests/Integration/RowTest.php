@@ -7,7 +7,10 @@ use Dew\Tablestore\Cells\DoubleAttribute;
 use Dew\Tablestore\Cells\IntegerAttribute;
 use Dew\Tablestore\Cells\StringAttribute;
 use Dew\Tablestore\Cells\StringPrimaryKey;
+use Dew\Tablestore\Crc;
+use Dew\Tablestore\PlainbufferReader;
 use Dew\Tablestore\PrimaryKey;
+use Dew\Tablestore\RowReader;
 
 test('data can be stored', function () {
     $response = tablestore()->table('testing_items')->insert([
@@ -266,4 +269,53 @@ test('batch write deletes multiple rows', function () {
 
     expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
         ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch read retrieves multiple rows', function () {
+    // prepare the testing data
+    $pk1 = PrimaryKey::string('key', 'batch-read-1');
+    $attr1 = Attribute::string('value', 'foo');
+    $pk2 = PrimaryKey::string('key', 'batch-read-2');
+    $attr2 = Attribute::string('value', 'bar');
+
+    $response = tablestore()->batch(function ($builder) use ($pk1, $attr1, $pk2, $attr2) {
+        $builder->table('testing_items')->insert([$pk1, $attr1]);
+        $builder->table('testing_items')->insert([$pk2, $attr2]);
+    })->write();
+
+    expect($response->getTables()->count())->toBe(1);
+
+    // validate the results
+    $response = tablestore()->batch(function ($builder) use ($pk1, $pk2) {
+        $builder->table('testing_items')->where([$pk1])->get();
+        $builder->table('testing_items')->where([$pk2])->get();
+    })->read();
+
+    expect($response->getTables()->count())->toBe(1)
+        ->and($response->getTables()[0]->getTableName())->toBe('testing_items')
+        ->and($response->getTables()[0]->getRows()->count())->toBe(2)
+        ->and($response->getTables()[0]->getRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getRows()[1]->getIsOk())->toBeTrue();
+
+    $read = function (string $buffer): array {
+        $reader = new RowReader(new PlainbufferReader($buffer), new Crc);
+
+        return $reader->toArray();
+    };
+
+    $row1 = $read($response->getTables()[0]->getRows()[0]->getRow());
+    expect($row1)->toBeArray()->toHaveKeys(['key', 'value'])
+        ->and($row1['key']->name())->toBe($pk1->name())
+        ->and($row1['key']->value())->toBe($pk1->value())
+        ->and($row1['value'][0]->name())->toBe($attr1->name())
+        ->and($row1['value'][0]->type())->toBe($attr1->type())
+        ->and($row1['value'][0]->value())->toBe($attr1->value());
+
+    $row2 = $read($response->getTables()[0]->getRows()[1]->getRow());
+    expect($row2)->toBeArray()->toHaveKeys(['key', 'value'])
+        ->and($row2['key']->name())->toBe($pk2->name())
+        ->and($row2['key']->value())->toBe($pk2->value())
+        ->and($row2['value'][0]->name())->toBe($attr2->name())
+        ->and($row2['value'][0]->type())->toBe($attr2->type())
+        ->and($row2['value'][0]->value())->toBe($attr2->value());
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
