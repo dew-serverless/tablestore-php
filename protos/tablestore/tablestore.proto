@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+option php_namespace = "Protos";
+option php_metadata_namespace = "Protos\\Metadata";
+
+package acs.tablestore;
+
+message Error {
+  required string code = 1;
+  optional string message = 2;
+}
