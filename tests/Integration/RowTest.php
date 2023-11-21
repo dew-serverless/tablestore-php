@@ -195,3 +195,24 @@ test('update with increment operation', function () {
         ->and($row['value'][0])->toBeInstanceOf(IntegerAttribute::class)
         ->and($row['value'][0]->value())->toBe(2);
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('delete removes the row', function () {
+    // prepare the testing data
+    tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'test-delete'),
+        Attribute::string('value', 'foo'),
+    ]);
+
+    // ensure the data is existing
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    expect($response->getDecodedRow())->toBeArray()->toHaveKey('value');
+
+    // delete the row
+    $response = tablestore()->table('testing_items')->where([$key])->delete();
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0)
+        ->and($response->getConsumed()->getCapacityUnit()->getRead())->toBe(0);
+
+    // ensure the data is missing
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    expect($response->getDecodedRow())->toBeNull();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');

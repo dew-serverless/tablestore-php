@@ -5,6 +5,8 @@ namespace Dew\Tablestore;
 use Dew\Tablestore\Responses\RowDecodableResponse;
 use Google\Protobuf\Internal\Message;
 use Protos\Condition;
+use Protos\DeleteRowRequest;
+use Protos\DeleteRowResponse;
 use Protos\GetRowRequest;
 use Protos\GetRowResponse;
 use Protos\PutRowRequest;
@@ -44,7 +46,7 @@ class Builder
     /**
      * The scoped primary keys.
      *
-     * @var \Dew\Tablestore\Cells\Cell[]
+     * @var (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]
      */
     protected array $wheres = [];
 
@@ -146,7 +148,7 @@ class Builder
     /**
      * Filter rows by the given primary keys.
      *
-     * @param  \Dew\Tablestore\Cells\Cell[]  $primaryKeys
+     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]  $primaryKeys
      */
     public function where(array $primaryKeys): self
     {
@@ -187,6 +189,16 @@ class Builder
     public function update(array $attributes): RowDecodableResponse
     {
         return $this->updateRow($attributes);
+    }
+
+    /**
+     * Remove the row from table.
+     *
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\DeleteRowResponse>
+     */
+    public function delete(): RowDecodableResponse
+    {
+        return $this->deleteRow();
     }
 
     /**
@@ -245,6 +257,34 @@ class Builder
 
         $response = new UpdateRowResponse;
         $response->mergeFromString($this->send('/UpdateRow', $request));
+
+        return new RowDecodableResponse($response);
+    }
+
+    /**
+     * Send the delete row request to Tablestore.
+     *
+     * @return \Dew\Tablestore\Responses\RowDecodableResponse<\Protos\DeleteRowResponse>
+     */
+    protected function deleteRow(): RowDecodableResponse
+    {
+        $row = $this->rowWriter()->deleteRow($this->wheres);
+
+        $condition = new Condition;
+        $condition->setRowExistence($this->expectation);
+
+        $returned = new ReturnContent;
+        $returned->setReturnColumnNames($this->selects);
+        $returned->setReturnType($this->returned);
+
+        $request = new DeleteRowRequest;
+        $request->setTableName($this->table);
+        $request->setPrimaryKey($row->getBuffer());
+        $request->setCondition($condition);
+        $request->setReturnContent($returned);
+
+        $response = new DeleteRowResponse;
+        $response->mergeFromString($this->send('/DeleteRow', $request));
 
         return new RowDecodableResponse($response);
     }
