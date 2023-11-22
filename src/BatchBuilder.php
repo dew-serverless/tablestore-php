@@ -2,15 +2,13 @@
 
 namespace Dew\Tablestore;
 
-use Dew\Tablestore\Concerns\FilterRows;
-use Protos\Condition;
+use Dew\Tablestore\Concerns\HasConditions;
 use Protos\OperationType;
-use Protos\RowExistenceExpectation;
 use Protos\RowInBatchWriteRowRequest;
 
 class BatchBuilder
 {
-    use FilterRows;
+    use HasConditions;
 
     /**
      * The operation type.
@@ -88,13 +86,11 @@ class BatchBuilder
      */
     public function toWriteRequest(): RowInBatchWriteRowRequest
     {
-        $condition = new Condition;
-        $condition->setRowExistence(RowExistenceExpectation::IGNORE);
-
         $request = new RowInBatchWriteRowRequest;
         $request->setType($this->operation);
         $request->setRowChange($this->row->getBuffer());
-        $request->setCondition($condition);
+        $request->setCondition($this->toCondition());
+        $request->setReturnContent($this->toReturnContent());
 
         return $request;
     }

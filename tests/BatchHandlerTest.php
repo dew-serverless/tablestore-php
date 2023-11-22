@@ -1,9 +1,12 @@
 <?php
 
+use Dew\Tablestore\Attribute;
 use Dew\Tablestore\BatchBag;
 use Dew\Tablestore\BatchHandler;
 use Dew\Tablestore\PrimaryKey;
 use Dew\Tablestore\Tablestore;
+use Protos\ReturnType;
+use Protos\RowExistenceExpectation;
 
 test('read retrieves all columns by default', function () {
     $bag = new BatchBag;
@@ -41,4 +44,28 @@ test('read calculates the max value version', function () {
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
     $tables = $handler->buildReadTables($bag);
     expect($tables[0]->getMaxVersions())->toBe(3);
+});
+
+test('write with row expectation', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([
+        PrimaryKey::string('key', 'foo'),
+    ])->expectExists()->update([
+        Attribute::string('value', 'bar'),
+    ]);
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildWriteTables($bag);
+    expect($tables[0]->getRows()[0]->getCondition()->getRowExistence())->toBe(RowExistenceExpectation::EXPECT_EXIST);
+});
+
+test('write with returned row customization', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([
+        PrimaryKey::string('key', 'foo'),
+    ])->returnModified()->update([
+        Attribute::string('value', 'bar'),
+    ]);
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildWriteTables($bag);
+    expect($tables[0]->getRows()[0]->getReturnContent()->getReturnType())->toBe(ReturnType::RT_AFTER_MODIFY);
 });

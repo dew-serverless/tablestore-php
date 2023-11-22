@@ -2,7 +2,7 @@
 
 namespace Dew\Tablestore;
 
-use Dew\Tablestore\Concerns\FilterRows;
+use Dew\Tablestore\Concerns\HasConditions;
 use Dew\Tablestore\Responses\RowDecodableResponse;
 use Google\Protobuf\Internal\Message;
 use Protos\Condition;
@@ -13,14 +13,12 @@ use Protos\GetRowResponse;
 use Protos\PutRowRequest;
 use Protos\PutRowResponse;
 use Protos\ReturnContent;
-use Protos\ReturnType;
-use Protos\RowExistenceExpectation;
 use Protos\UpdateRowRequest;
 use Protos\UpdateRowResponse;
 
 class Builder
 {
-    use FilterRows;
+    use HasConditions;
 
     /**
      * The collected rows.
@@ -30,16 +28,6 @@ class Builder
     protected array $rows = [];
 
     /**
-     * The row existence expectation.
-     */
-    protected int $expectation = RowExistenceExpectation::IGNORE;
-
-    /**
-     * The returned row of the response.
-     */
-    protected int $returned = ReturnType::RT_PK;
-
-    /**
      * Create a builder.
      */
     public function __construct(
@@ -47,74 +35,6 @@ class Builder
         protected string $table
     ) {
         //
-    }
-
-    /**
-     * Expect the row is existing.
-     */
-    public function expectExists(): self
-    {
-        return $this->expect(RowExistenceExpectation::EXPECT_EXIST);
-    }
-
-    /**
-     * Expect the row is missing.
-     */
-    public function expectMissing(): self
-    {
-        return $this->expect(RowExistenceExpectation::EXPECT_NOT_EXIST);
-    }
-
-    /**
-     * Ignore the row existence.
-     */
-    public function ignoreExistence(): self
-    {
-        return $this->expect(RowExistenceExpectation::IGNORE);
-    }
-
-    /**
-     * Set the row existence expectation.
-     */
-    public function expect(int $expectation): self
-    {
-        $this->expectation = $expectation;
-
-        return $this;
-    }
-
-    /**
-     * Set no returned row in response.
-     */
-    public function withoutReturn(): self
-    {
-        return $this->returned(ReturnType::RT_NONE);
-    }
-
-    /**
-     * Return the primary key in response.
-     */
-    public function returnPrimaryKey(): self
-    {
-        return $this->returned(ReturnType::RT_PK);
-    }
-
-    /**
-     * Return the modified attributes in response.
-     */
-    public function returnModified(): self
-    {
-        return $this->returned(ReturnType::RT_AFTER_MODIFY);
-    }
-
-    /**
-     * Set the return type of the response.
-     */
-    public function returned(int $type): self
-    {
-        $this->returned = $type;
-
-        return $this;
     }
 
     /**
