@@ -7,10 +7,8 @@ use Dew\Tablestore\Cells\DoubleAttribute;
 use Dew\Tablestore\Cells\IntegerAttribute;
 use Dew\Tablestore\Cells\StringAttribute;
 use Dew\Tablestore\Cells\StringPrimaryKey;
-use Dew\Tablestore\Crc;
-use Dew\Tablestore\PlainbufferReader;
 use Dew\Tablestore\PrimaryKey;
-use Dew\Tablestore\RowReader;
+use Dew\Tablestore\Responses\RowDecodableResponse;
 
 test('data can be stored', function () {
     $response = tablestore()->table('testing_items')->insert([
@@ -297,13 +295,7 @@ test('batch read retrieves multiple rows', function () {
         ->and($response->getTables()[0]->getRows()[0]->getIsOk())->toBeTrue()
         ->and($response->getTables()[0]->getRows()[1]->getIsOk())->toBeTrue();
 
-    $read = function (string $buffer): array {
-        $reader = new RowReader(new PlainbufferReader($buffer), new Crc);
-
-        return $reader->toArray();
-    };
-
-    $row1 = $read($response->getTables()[0]->getRows()[0]->getRow());
+    $row1 = (new RowDecodableResponse($response->getTables()[0]->getRows()[0]))->getDecodedRow();
     expect($row1)->toBeArray()->toHaveKeys(['key', 'value'])
         ->and($row1['key']->name())->toBe($pk1->name())
         ->and($row1['key']->value())->toBe($pk1->value())
@@ -311,7 +303,7 @@ test('batch read retrieves multiple rows', function () {
         ->and($row1['value'][0]->type())->toBe($attr1->type())
         ->and($row1['value'][0]->value())->toBe($attr1->value());
 
-    $row2 = $read($response->getTables()[0]->getRows()[1]->getRow());
+    $row2 = (new RowDecodableResponse($response->getTables()[0]->getRows()[1]))->getDecodedRow();
     expect($row2)->toBeArray()->toHaveKeys(['key', 'value'])
         ->and($row2['key']->name())->toBe($pk2->name())
         ->and($row2['key']->value())->toBe($pk2->value())
