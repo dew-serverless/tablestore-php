@@ -8,6 +8,8 @@ use Protos\BatchGetRowRequest;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowRequest;
 use Protos\BatchWriteRowResponse;
+use Protos\Condition;
+use Protos\ReturnContent;
 use Protos\RowInBatchWriteRowRequest;
 use Protos\TableInBatchGetRowRequest;
 use Protos\TableInBatchWriteRowRequest;
@@ -40,7 +42,7 @@ class BatchHandler
             return $builders[0]->isRead();
         }
 
-        throw new BatchHandlerException('Requires something in batch API.');
+        throw new BatchHandlerException('Requires something in a batch.');
     }
 
     /**
@@ -67,22 +69,7 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            [$pks, $selects, $takes] = array_reduce($builders, function (array $carry, $builder): array {
-                if ($builder->isWrite()) {
-                    throw new BatchHandlerException('Could not mix read and write operations in one batch.');
-                }
-
-                // pks: combine the buffer in each builder.
-                $carry[0][] = $builder->getRow()->getBuffer();
-
-                // selects: combine the selected columns in each builder.
-                $carry[1] = [...$carry[1], ...$builder->selects];
-
-                // takes: retrieve the maximal value version from builders.
-                $carry[2] = max($carry[2], $builder->takes);
-
-                return $carry;
-            }, [[], [], 0]);
+            [$pks, $selects, $takes] = $this->extractPayloadFromRead($builders);
 
             $tables[] = (new TableInBatchGetRowRequest)
                 ->setTableName($table)
@@ -92,6 +79,39 @@ class BatchHandler
         }
 
         return $tables;
+    }
+
+    /**
+     * Extract payload from a list of read builders.
+     *
+     * @param  \Dew\Tablestore\BatchBuilder[]  $builders
+     * @return array{0: string[], 1: string[], 2: positive-int}
+     */
+    protected function extractPayloadFromRead(array $builders): array
+    {
+        // @phpstan-ignore-next-line
+        return array_reduce($builders, function (array $carry, BatchBuilder $builder): array {
+            $buffer = $builder->row?->getBuffer();
+
+            if ($buffer === null) {
+                throw new BatchHandlerException('The statement is incomplete.');
+            }
+
+            if ($builder->isWrite()) {
+                throw new BatchHandlerException('Could not mix read and write operations in one batch.');
+            }
+
+            // pks: combine the buffer in each builder.
+            $carry[0][] = $buffer;
+
+            // selects: combine the selected columns in each builder.
+            $carry[1] = [...$carry[1], ...$builder->selects];
+
+            // takes: retrieve the maximal value version from builders.
+            $carry[2] = max($carry[2], $builder->takes);
+
+            return $carry;
+        }, [[], [], 0]);
     }
 
     /**
@@ -120,16 +140,39 @@ class BatchHandler
         foreach ($bag->getTables() as $table => $builders) {
             $tables[] = (new TableInBatchWriteRowRequest)
                 ->setTableName($table)
-                ->setRows(array_map(function ($builder): RowInBatchWriteRowRequest {
-                    if ($builder->isRead()) {
-                        throw new BatchHandlerException('Could not mix read and write operations in one batch.');
-                    }
-
-                    return $builder->toWriteRequest();
-                }, $builders));
+                ->setRows(array_map(fn ($builder): RowInBatchWriteRowRequest => $this->toChangesRequest($builder), $builders));
         }
 
         return $tables;
+    }
+
+    /**
+     * Build a row changes request from the given builder.
+     */
+    protected function toChangesRequest(BatchBuilder $builder): RowInBatchWriteRowRequest
+    {
+        $buffer = $builder->row?->getBuffer();
+
+        if ($buffer === null) {
+            throw new BatchHandlerException('The statement is incomplete.');
+        }
+
+        if ($builder->isRead()) {
+            throw new BatchHandlerException('Could not mix read and write operations in one batch.');
+        }
+
+        $condition = new Condition;
+        $condition->setRowExistence($builder->expectation);
+
+        $content = new ReturnContent;
+        $content->setReturnType($builder->returned);
+        $content->setReturnColumnNames($builder->selects);
+
+        return (new RowInBatchWriteRowRequest)
+            ->setType($builder->operation ?? throw new BatchHandlerException('The statement is incomplete.'))
+            ->setRowChange($buffer)
+            ->setCondition($condition)
+            ->setReturnContent($content);
     }
 
     /**

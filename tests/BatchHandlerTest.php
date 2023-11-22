@@ -88,3 +88,35 @@ test('write could not read and write in one batch', function () {
     expect(fn () => $handler->handle($bag))
         ->toThrow(BatchHandlerException::class, 'Could not mix read and write operations in one batch.');
 });
+
+test('bag must not be empty', function () {
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    expect(fn () => $handler->handle(new BatchBag))
+        ->toThrow(BatchHandlerException::class, 'Requires something in a batch');
+});
+
+test('bag contains incomplete statement', function () {
+    $bag = new BatchBag;
+    $bag->table('testing');
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    expect(fn () => $handler->handle($bag))
+        ->toThrow(BatchHandlerException::class, 'The statement is incomplete.');
+});
+
+test('read bag contains incomplete statement', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
+    $bag->table('testing');
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    expect(fn () => $handler->handle($bag))
+        ->toThrow(BatchHandlerException::class, 'The statement is incomplete.');
+});
+
+test('write bag contains incomplete statement', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->insert([PrimaryKey::string('key', 'foo'), Attribute::string('value', 'bar')]);
+    $bag->table('testing');
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    expect(fn () => $handler->handle($bag))
+        ->toThrow(BatchHandlerException::class, 'The statement is incomplete.');
+});

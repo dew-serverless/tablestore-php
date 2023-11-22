@@ -4,7 +4,6 @@ namespace Dew\Tablestore;
 
 use Dew\Tablestore\Concerns\HasConditions;
 use Protos\OperationType;
-use Protos\RowInBatchWriteRowRequest;
 
 class BatchBuilder
 {
@@ -13,12 +12,12 @@ class BatchBuilder
     /**
      * The operation type.
      */
-    protected int $operation;
+    public ?int $operation = null;
 
     /**
      * The row writer.
      */
-    protected RowWriter $row;
+    public ?RowWriter $row = null;
 
     /**
      * Create a batch builder.
@@ -46,7 +45,7 @@ class BatchBuilder
      */
     public function get(): void
     {
-        unset($this->operation);
+        $this->operation = null;
         $this->row = $this->newRow()->addRow($this->wheres);
     }
 
@@ -82,20 +81,6 @@ class BatchBuilder
     }
 
     /**
-     * Represent the builder as row changes request.
-     */
-    public function toWriteRequest(): RowInBatchWriteRowRequest
-    {
-        $request = new RowInBatchWriteRowRequest;
-        $request->setType($this->operation);
-        $request->setRowChange($this->row->getBuffer());
-        $request->setCondition($this->toCondition());
-        $request->setReturnContent($this->toReturnContent());
-
-        return $request;
-    }
-
-    /**
      * Make a new row writer.
      */
     protected function newRow(): RowWriter
@@ -103,14 +88,6 @@ class BatchBuilder
         $row = new RowWriter(new PlainbufferWriter, new Crc);
 
         return $row->writeHeader();
-    }
-
-    /**
-     * The row writer.
-     */
-    public function getRow(): RowWriter
-    {
-        return $this->row;
     }
 
     /**
@@ -126,7 +103,7 @@ class BatchBuilder
      */
     public function isRead(): bool
     {
-        return ! $this->isWrite();
+        return $this->operation === null;
     }
 
     /**
@@ -134,6 +111,6 @@ class BatchBuilder
      */
     public function isWrite(): bool
     {
-        return isset($this->operation);
+        return ! $this->isRead();
     }
 }
