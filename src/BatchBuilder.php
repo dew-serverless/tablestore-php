@@ -90,7 +90,7 @@ class BatchBuilder
     /**
      * Represent the builder as row changes request.
      */
-    public function toRequest(): RowInBatchWriteRowRequest
+    public function toWriteRequest(): RowInBatchWriteRowRequest
     {
         $condition = new Condition;
         $condition->setRowExistence(RowExistenceExpectation::IGNORE);

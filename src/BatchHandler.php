@@ -104,7 +104,7 @@ class BatchHandler
         foreach ($bag->getTables() as $table => $builders) {
             $request = new TableInBatchWriteRowRequest;
             $request->setTableName($table);
-            $request->setRows(array_map(fn ($builder): RowInBatchWriteRowRequest => $builder->toRequest(), $builders));
+            $request->setRows(array_map(fn ($builder): RowInBatchWriteRowRequest => $builder->toWriteRequest(), $builders));
 
             $tables[] = $request;
         }
