@@ -8,6 +8,7 @@ use Dew\Tablestore\Cells\IntegerAttribute;
 use Dew\Tablestore\Cells\StringAttribute;
 use Dew\Tablestore\Cells\StringPrimaryKey;
 use Dew\Tablestore\PrimaryKey;
+use Dew\Tablestore\Responses\RowDecodableResponse;
 
 test('data can be stored', function () {
     $response = tablestore()->table('testing_items')->insert([
@@ -215,4 +216,133 @@ test('delete removes the row', function () {
     // ensure the data is missing
     $response = tablestore()->table('testing_items')->where([$key])->get();
     expect($response->getDecodedRow())->toBeNull();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch write writes multiple rows', function () {
+    $response = tablestore()->batch(function ($builder) {
+        $builder->table('testing_items')->insert([
+            PrimaryKey::string('key', 'batch-write-1'),
+            Attribute::string('value', 'foo'),
+        ]);
+
+        $builder->table('testing_items')->insert([
+            PrimaryKey::string('key', 'batch-write-2'),
+            Attribute::string('value', 'foo'),
+        ]);
+    });
+
+    expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch write updates multiple rows', function () {
+    $response = tablestore()->batch(function ($builder) {
+        $builder->table('testing_items')->where([
+            PrimaryKey::string('key', 'batch-write-1'),
+        ])->update([
+            Attribute::string('value', 'foo-new'),
+        ]);
+
+        $builder->table('testing_items')->where([
+            PrimaryKey::string('key', 'batch-write-2'),
+        ])->update([
+            Attribute::string('value', 'foo-new'),
+        ]);
+    });
+
+    expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch write increments counter', function () {
+    // prepare the testing data
+    $response = tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'batch-counter'),
+        Attribute::integer('value', 0),
+    ]);
+
+    expect($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
+
+    // apply increment operation
+    $increment = function ($key): void {
+        $response = tablestore()->batch(function ($builder) use ($key) {
+            $builder->table('testing_items')->where([$key])->update([
+                Attribute::integer('value', 1)->increment(),
+            ]);
+        });
+
+        expect($response->getTables()->count())->toBe(1)
+            ->and($response->getTables()[0]->getPutRows()->count())->toBe(1)
+            ->and($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue();
+    };
+
+    // apply one more time to ensure we're not only overriding the value
+    $increment($key);
+    $increment($key);
+
+    // validate the incremented value
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    $row = $response->getDecodedRow();
+
+    expect($row)->toBeArray()->toHaveKey('value')
+        ->and($row['value'][0])->toBeInstanceOf(IntegerAttribute::class)
+        ->and($row['value'][0]->value())->toBe(2);
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch write deletes multiple rows', function () {
+    $response = tablestore()->batch(function ($builder) {
+        $builder->table('testing_items')->where([
+            PrimaryKey::string('key', 'batch-write-1'),
+        ])->delete();
+
+        $builder->table('testing_items')->where([
+            PrimaryKey::string('key', 'batch-write-2'),
+        ])->delete();
+    });
+
+    expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('batch read retrieves multiple rows', function () {
+    // prepare the testing data
+    $pk1 = PrimaryKey::string('key', 'batch-read-1');
+    $attr1 = Attribute::string('value', 'foo');
+    $pk2 = PrimaryKey::string('key', 'batch-read-2');
+    $attr2 = Attribute::string('value', 'bar');
+
+    $response = tablestore()->batch(function ($builder) use ($pk1, $attr1, $pk2, $attr2) {
+        $builder->table('testing_items')->insert([$pk1, $attr1]);
+        $builder->table('testing_items')->insert([$pk2, $attr2]);
+    });
+
+    expect($response->getTables()->count())->toBe(1);
+
+    // validate the results
+    $response = tablestore()->batch(function ($builder) use ($pk1, $pk2) {
+        $builder->table('testing_items')->where([$pk1])->get();
+        $builder->table('testing_items')->where([$pk2])->get();
+    });
+
+    expect($response->getTables()->count())->toBe(1)
+        ->and($response->getTables()[0]->getTableName())->toBe('testing_items')
+        ->and($response->getTables()[0]->getRows()->count())->toBe(2)
+        ->and($response->getTables()[0]->getRows()[0]->getIsOk())->toBeTrue()
+        ->and($response->getTables()[0]->getRows()[1]->getIsOk())->toBeTrue();
+
+    $row1 = (new RowDecodableResponse($response->getTables()[0]->getRows()[0]))->getDecodedRow();
+    expect($row1)->toBeArray()->toHaveKeys(['key', 'value'])
+        ->and($row1['key']->name())->toBe($pk1->name())
+        ->and($row1['key']->value())->toBe($pk1->value())
+        ->and($row1['value'][0]->name())->toBe($attr1->name())
+        ->and($row1['value'][0]->type())->toBe($attr1->type())
+        ->and($row1['value'][0]->value())->toBe($attr1->value());
+
+    $row2 = (new RowDecodableResponse($response->getTables()[0]->getRows()[1]))->getDecodedRow();
+    expect($row2)->toBeArray()->toHaveKeys(['key', 'value'])
+        ->and($row2['key']->name())->toBe($pk2->name())
+        ->and($row2['key']->value())->toBe($pk2->value())
+        ->and($row2['value'][0]->name())->toBe($attr2->name())
+        ->and($row2['value'][0]->type())->toBe($attr2->type())
+        ->and($row2['value'][0]->value())->toBe($attr2->value());
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
