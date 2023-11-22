@@ -52,6 +52,7 @@ class BatchBuilder
      */
     public function get(): void
     {
+        unset($this->operation);
         $this->row = $this->newRow()->addRow($this->wheres);
     }
 
@@ -126,5 +127,21 @@ class BatchBuilder
     public function getTable(): string
     {
         return $this->table;
+    }
+
+    /**
+     * Determine if the builder belongs to read batch.
+     */
+    public function isRead(): bool
+    {
+        return ! $this->isWrite();
+    }
+
+    /**
+     * Determine if the builder belongs to write batch.
+     */
+    public function isWrite(): bool
+    {
+        return isset($this->operation);
     }
 }

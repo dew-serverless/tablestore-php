@@ -231,7 +231,7 @@ test('batch write writes multiple rows', function () {
             PrimaryKey::string('key', 'batch-write-2'),
             Attribute::string('value', 'foo'),
         ]);
-    })->write();
+    });
 
     expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
         ->and($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue();
@@ -250,7 +250,7 @@ test('batch write updates multiple rows', function () {
         ])->update([
             Attribute::string('value', 'foo-new'),
         ]);
-    })->write();
+    });
 
     expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
         ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
@@ -265,7 +265,7 @@ test('batch write deletes multiple rows', function () {
         $builder->table('testing_items')->where([
             PrimaryKey::string('key', 'batch-write-2'),
         ])->delete();
-    })->write();
+    });
 
     expect($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue()
         ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
@@ -281,7 +281,7 @@ test('batch read retrieves multiple rows', function () {
     $response = tablestore()->batch(function ($builder) use ($pk1, $attr1, $pk2, $attr2) {
         $builder->table('testing_items')->insert([$pk1, $attr1]);
         $builder->table('testing_items')->insert([$pk2, $attr2]);
-    })->write();
+    });
 
     expect($response->getTables()->count())->toBe(1);
 
@@ -289,7 +289,7 @@ test('batch read retrieves multiple rows', function () {
     $response = tablestore()->batch(function ($builder) use ($pk1, $pk2) {
         $builder->table('testing_items')->where([$pk1])->get();
         $builder->table('testing_items')->where([$pk2])->get();
-    })->read();
+    });
 
     expect($response->getTables()->count())->toBe(1)
         ->and($response->getTables()[0]->getTableName())->toBe('testing_items')

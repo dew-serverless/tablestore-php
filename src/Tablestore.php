@@ -8,6 +8,8 @@ use Dew\Tablestore\Middlewares\SignRequest;
 use Google\Protobuf\Internal\Message;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
+use Protos\BatchGetRowResponse;
+use Protos\BatchWriteRowResponse;
 use Psr\Http\Message\ResponseInterface;
 
 class Tablestore
@@ -74,11 +76,11 @@ class Tablestore
      *
      * @param  callable(\Dew\Tablestore\BatchBag): void  $callback
      */
-    public function batch(callable $callback): BatchManager
+    public function batch(callable $callback): BatchGetRowResponse|BatchWriteRowResponse
     {
         $callback($bag = new BatchBag);
 
-        return new BatchManager($this, $bag);
+        return (new BatchHandler($this))->handle($bag);
     }
 
     /**
