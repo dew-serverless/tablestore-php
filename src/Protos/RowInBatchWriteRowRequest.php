@@ -26,9 +26,9 @@ class RowInBatchWriteRowRequest extends \Google\Protobuf\Internal\Message
      */
     protected $condition = null;
     /**
-     * Generated from protobuf field <code>optional .acs.tablestore.row.ReturnType return_type = 4;</code>
+     * Generated from protobuf field <code>optional .acs.tablestore.row.ReturnContent return_content = 4;</code>
      */
-    protected $return_type = null;
+    protected $return_content = null;
 
     /**
      * Constructor.
@@ -39,7 +39,7 @@ class RowInBatchWriteRowRequest extends \Google\Protobuf\Internal\Message
      *     @type int $type
      *     @type string $row_change
      *     @type \Protos\Condition $condition
-     *     @type int $return_type
+     *     @type \Protos\ReturnContent $return_content
      * }
      */
     public function __construct($data = NULL) {
@@ -144,33 +144,33 @@ class RowInBatchWriteRowRequest extends \Google\Protobuf\Internal\Message
     }
 
     /**
-     * Generated from protobuf field <code>optional .acs.tablestore.row.ReturnType return_type = 4;</code>
-     * @return int
+     * Generated from protobuf field <code>optional .acs.tablestore.row.ReturnContent return_content = 4;</code>
+     * @return \Protos\ReturnContent|null
      */
-    public function getReturnType()
+    public function getReturnContent()
     {
-        return isset($this->return_type) ? $this->return_type : 0;
+        return $this->return_content;
     }
 
-    public function hasReturnType()
+    public function hasReturnContent()
     {
-        return isset($this->return_type);
+        return isset($this->return_content);
     }
 
-    public function clearReturnType()
+    public function clearReturnContent()
     {
-        unset($this->return_type);
+        unset($this->return_content);
     }
 
     /**
-     * Generated from protobuf field <code>optional .acs.tablestore.row.ReturnType return_type = 4;</code>
-     * @param int $var
+     * Generated from protobuf field <code>optional .acs.tablestore.row.ReturnContent return_content = 4;</code>
+     * @param \Protos\ReturnContent $var
      * @return $this
      */
-    public function setReturnType($var)
+    public function setReturnContent($var)
     {
-        GPBUtil::checkEnum($var, \Protos\ReturnType::class);
-        $this->return_type = $var;
+        GPBUtil::checkMessage($var, \Protos\ReturnContent::class);
+        $this->return_content = $var;
 
         return $this;
     }

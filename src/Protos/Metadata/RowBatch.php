@@ -18,7 +18,7 @@ class RowBatch
         \Protos\Metadata\Row::initOnce();
         $pool->internalAddGeneratedFile(
             '
-ß
+≠
 row_batch.protoacs.tablestore.row.batch	row.proto"Y
 BatchGetRowRequestC
 tables (23.acs.tablestore.row.batch.TableInBatchGetRowRequest"[
@@ -57,13 +57,13 @@ next_token ("]
 TableInBatchWriteRowRequest
 
 table_name (	A
-rows (23.acs.tablestore.row.batch.RowInBatchWriteRowRequest"Õ
+rows (23.acs.tablestore.row.batch.RowInBatchWriteRowRequest"”
 RowInBatchWriteRowRequest5
 type (2\'.acs.tablestore.row.batch.OperationType
 
 row_change (0
-	condition (2.acs.tablestore.row.Condition3
-return_type (2.acs.tablestore.row.ReturnType"ê
+	condition (2.acs.tablestore.row.Condition9
+return_content (2!.acs.tablestore.row.ReturnContent"ê
 TableInBatchWriteRowResponse
 
 table_name (	F
