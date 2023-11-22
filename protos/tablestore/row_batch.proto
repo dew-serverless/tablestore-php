@@ -67,7 +67,7 @@ message RowInBatchWriteRowRequest {
   required OperationType type = 1;
   required bytes row_change = 2;
   required Condition condition = 3;
-  optional ReturnType return_type = 4;
+  optional ReturnContent return_content = 4;
 }
 
 message TableInBatchWriteRowResponse {
