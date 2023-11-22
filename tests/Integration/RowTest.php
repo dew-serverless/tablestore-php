@@ -254,6 +254,41 @@ test('batch write updates multiple rows', function () {
         ->and($response->getTables()[0]->getPutRows()[1]->getIsOk())->toBeTrue();
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
 
+test('batch write increments counter', function () {
+    // prepare the testing data
+    $response = tablestore()->table('testing_items')->insert([
+        $key = PrimaryKey::string('key', 'batch-counter'),
+        Attribute::integer('value', 0),
+    ]);
+
+    expect($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(1);
+
+    // apply increment operation
+    $increment = function ($key): void {
+        $response = tablestore()->batch(function ($builder) use ($key) {
+            $builder->table('testing_items')->where([$key])->update([
+                Attribute::integer('value', 1)->increment(),
+            ]);
+        });
+
+        expect($response->getTables()->count())->toBe(1)
+            ->and($response->getTables()[0]->getPutRows()->count())->toBe(1)
+            ->and($response->getTables()[0]->getPutRows()[0]->getIsOk())->toBeTrue();
+    };
+
+    // apply one more time to ensure we're not only overriding the value
+    $increment($key);
+    $increment($key);
+
+    // validate the incremented value
+    $response = tablestore()->table('testing_items')->where([$key])->get();
+    $row = $response->getDecodedRow();
+
+    expect($row)->toBeArray()->toHaveKey('value')
+        ->and($row['value'][0])->toBeInstanceOf(IntegerAttribute::class)
+        ->and($row['value'][0]->value())->toBe(2);
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
 test('batch write deletes multiple rows', function () {
     $response = tablestore()->batch(function ($builder) {
         $builder->table('testing_items')->where([
