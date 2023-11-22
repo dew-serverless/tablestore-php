@@ -29,18 +29,6 @@ class BatchBuilder
     }
 
     /**
-     * Filter rows by the given primary keys.
-     *
-     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]  $primaryKeys
-     */
-    public function where(array $primaryKeys): self
-    {
-        $this->wheres = $primaryKeys;
-
-        return $this;
-    }
-
-    /**
      * Query rows from table.
      */
     public function get(): void
