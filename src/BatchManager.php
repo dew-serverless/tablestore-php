@@ -17,7 +17,7 @@ class BatchManager
      */
     public function __construct(
         protected Tablestore $tablestore,
-        protected BatchChanges $bag
+        protected BatchBag $bag
     ) {
         //
     }

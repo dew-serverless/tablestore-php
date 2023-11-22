@@ -2,17 +2,17 @@
 
 namespace Dew\Tablestore;
 
-class BatchChanges
+class BatchBag
 {
     /**
-     * The table name and changes pair.
+     * The table name and builders pair.
      *
      * @var array<string, \Dew\Tablestore\BatchBuilder[]>
      */
     protected array $tables = [];
 
     /**
-     * Propose data changes against the given table.
+     * Make a new builder for the given table.
      */
     public function table(string $table): BatchBuilder
     {
@@ -20,7 +20,7 @@ class BatchChanges
     }
 
     /**
-     * Get the table name and changes pair.
+     * Get the table name and builders pair.
      *
      * @return array<string, \Dew\Tablestore\BatchBuilder[]>
      */
