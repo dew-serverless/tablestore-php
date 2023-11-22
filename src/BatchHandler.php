@@ -67,19 +67,28 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            $request = new TableInBatchGetRowRequest;
-            $request->setTableName($table);
+            [$pks, $selects, $takes] = array_reduce($builders, function (array $carry, $builder): array {
+                if ($builder->isWrite()) {
+                    throw new BatchHandlerException('Could not mix read and write operations in one batch.');
+                }
 
-            // combine the buffer in each builder.
-            $request->setPrimaryKey(array_map(fn ($builder): string => $builder->getRow()->getBuffer(), $builders));
+                // pks: combine the buffer in each builder.
+                $carry[0][] = $builder->getRow()->getBuffer();
 
-            // uniquely combine the selected columns in each builder.
-            $request->setColumnsToGet(array_unique(array_reduce($builders, fn (array $carry, $builder): array => [...$carry, ...$builder->selects], [])));
+                // selects: combine the selected columns in each builder.
+                $carry[1] = [...$carry[1], ...$builder->selects];
 
-            // retrieve the maximal value version from builders.
-            $request->setMaxVersions(array_reduce($builders, fn (int $carry, $builder): int => max($carry, $builder->takes), 0));
+                // takes: retrieve the maximal value version from builders.
+                $carry[2] = max($carry[2], $builder->takes);
 
-            $tables[] = $request;
+                return $carry;
+            }, [[], [], 0]);
+
+            $tables[] = (new TableInBatchGetRowRequest)
+                ->setTableName($table)
+                ->setPrimaryKey($pks)
+                ->setColumnsToGet($selects)
+                ->setMaxVersions($takes);
         }
 
         return $tables;
@@ -109,11 +118,15 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            $request = new TableInBatchWriteRowRequest;
-            $request->setTableName($table);
-            $request->setRows(array_map(fn ($builder): RowInBatchWriteRowRequest => $builder->toWriteRequest(), $builders));
+            $tables[] = (new TableInBatchWriteRowRequest)
+                ->setTableName($table)
+                ->setRows(array_map(function ($builder): RowInBatchWriteRowRequest {
+                    if ($builder->isRead()) {
+                        throw new BatchHandlerException('Could not mix read and write operations in one batch.');
+                    }
 
-            $tables[] = $request;
+                    return $builder->toWriteRequest();
+                }, $builders));
         }
 
         return $tables;

@@ -3,6 +3,7 @@
 use Dew\Tablestore\Attribute;
 use Dew\Tablestore\BatchBag;
 use Dew\Tablestore\BatchHandler;
+use Dew\Tablestore\Exceptions\BatchHandlerException;
 use Dew\Tablestore\PrimaryKey;
 use Dew\Tablestore\Tablestore;
 use Protos\ReturnType;
@@ -68,4 +69,22 @@ test('write with returned row customization', function () {
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
     $tables = $handler->buildWriteTables($bag);
     expect($tables[0]->getRows()[0]->getReturnContent()->getReturnType())->toBe(ReturnType::RT_AFTER_MODIFY);
+});
+
+test('read could not read and write in one batch', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
+    $bag->table('testing')->insert([PrimaryKey::string('key', 'foo'), Attribute::string('value', 'bar')]);
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    expect(fn () => $handler->handle($bag))
+        ->toThrow(BatchHandlerException::class, 'Could not mix read and write operations in one batch.');
+});
+
+test('write could not read and write in one batch', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->insert([PrimaryKey::string('key', 'foo'), Attribute::string('value', 'bar')]);
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    expect(fn () => $handler->handle($bag))
+        ->toThrow(BatchHandlerException::class, 'Could not mix read and write operations in one batch.');
 });
