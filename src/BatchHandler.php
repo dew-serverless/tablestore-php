@@ -62,15 +62,22 @@ class BatchHandler
      *
      * @return \Protos\TableInBatchGetRowRequest[]
      */
-    protected function buildReadTables(BatchBag $bag): array
+    public function buildReadTables(BatchBag $bag): array
     {
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
             $request = new TableInBatchGetRowRequest;
             $request->setTableName($table);
+
+            // combine the buffer in each builder.
             $request->setPrimaryKey(array_map(fn ($builder): string => $builder->getRow()->getBuffer(), $builders));
-            $request->setMaxVersions(1);
+
+            // uniquely combine the selected columns in each builder.
+            $request->setColumnsToGet(array_unique(array_reduce($builders, fn (array $carry, $builder): array => [...$carry, ...$builder->selects], [])));
+
+            // retrieve the maximal value version from builders.
+            $request->setMaxVersions(array_reduce($builders, fn (int $carry, $builder): int => max($carry, $builder->takes), 0));
 
             $tables[] = $request;
         }
@@ -97,7 +104,7 @@ class BatchHandler
      *
      * @return \Protos\TableInBatchWriteRowRequest[]
      */
-    protected function buildWriteTables(BatchBag $bag): array
+    public function buildWriteTables(BatchBag $bag): array
     {
         $tables = [];
 

@@ -2,6 +2,7 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Concerns\FilterRows;
 use Dew\Tablestore\Responses\RowDecodableResponse;
 use Google\Protobuf\Internal\Message;
 use Protos\Condition;
@@ -19,6 +20,8 @@ use Protos\UpdateRowResponse;
 
 class Builder
 {
+    use FilterRows;
+
     /**
      * The collected rows.
      *
@@ -35,25 +38,6 @@ class Builder
      * The returned row of the response.
      */
     protected int $returned = ReturnType::RT_PK;
-
-    /**
-     * The list of column names to retrieve with.
-     *
-     * @var string[]
-     */
-    protected array $selects = [];
-
-    /**
-     * The scoped primary keys.
-     *
-     * @var (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]
-     */
-    protected array $wheres = [];
-
-    /**
-     * The maximal value versions retrieval.
-     */
-    protected int $takes = 1;
 
     /**
      * Create a builder.
@@ -129,40 +113,6 @@ class Builder
     public function returned(int $type): self
     {
         $this->returned = $type;
-
-        return $this;
-    }
-
-    /**
-     * Select a list of column name to retrieve with.
-     *
-     * @param  string[]  $columns
-     */
-    public function select(array $columns = []): self
-    {
-        $this->selects = $columns;
-
-        return $this;
-    }
-
-    /**
-     * Filter rows by the given primary keys.
-     *
-     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]  $primaryKeys
-     */
-    public function where(array $primaryKeys): self
-    {
-        $this->wheres = $primaryKeys;
-
-        return $this;
-    }
-
-    /**
-     * Set the maximal value versions to retrieve.
-     */
-    public function take(int $versions): self
-    {
-        $this->takes = $versions;
 
         return $this;
     }

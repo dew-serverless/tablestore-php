@@ -2,6 +2,7 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Concerns\FilterRows;
 use Protos\Condition;
 use Protos\OperationType;
 use Protos\RowExistenceExpectation;
@@ -9,17 +10,12 @@ use Protos\RowInBatchWriteRowRequest;
 
 class BatchBuilder
 {
+    use FilterRows;
+
     /**
      * The operation type.
      */
     protected int $operation;
-
-    /**
-     * The scoped primary keys.
-     *
-     * @var (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]
-     */
-    protected array $wheres = [];
 
     /**
      * The row writer.
