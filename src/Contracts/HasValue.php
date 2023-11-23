@@ -18,6 +18,15 @@ interface HasValue
     public function type(): int;
 
     /**
+     * The allocated size in byte for the value in buffer.
+     *
+     * formatted_value = value_type value_len value_data
+     * value_type = int8
+     * value_len = int32
+     */
+    public function valueSize(): int;
+
+    /**
      * Get value from the formatted value in buffer.
      */
     public static function fromFormattedValue(PlainbufferReader $buffer): mixed;

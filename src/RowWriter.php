@@ -178,7 +178,7 @@ class RowWriter
     public function addCellValue(HasValue $cell): self
     {
         $this->buffer->writeChar(Tag::CELL_VALUE);
-
+        $this->buffer->writeLittleEndian32($cell->valueSize());
         $cell->toFormattedValue($this->buffer);
 
         return $this;
