@@ -68,7 +68,9 @@ class Tablestore
      */
     public function table(string $table): Builder
     {
-        return new Builder($this, $table);
+        return (new Builder)
+            ->setTable($table)
+            ->handlerUsing(new Handler($this));
     }
 
     /**

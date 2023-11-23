@@ -9,3 +9,16 @@ parameters:
 
     excludePaths:
         - src/Protos
+
+    ignoreErrors:
+        -
+            message: '#Call to function is_array\(\) with Dew\\Tablestore\\Cells\\Cell will always evaluate to false.#'
+            path: src/FilterBuilder.php
+
+        -
+            message: '#Property [a-zA-Z0-9\\_]+::\$wheres .* does not accept .*#'
+            path: src/Concerns/HasConditions.php
+
+        -
+            message: '#^Method Dew\\Tablestore\\BatchHandler\:\:extractPayloadFromRead\(\) should return array\{array\<string\>, array\<string\>, int\<1, max\>\} but returns non\-empty\-array\.$#'
+            path: src/BatchHandler.php

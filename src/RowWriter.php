@@ -60,7 +60,7 @@ class RowWriter
     /**
      * Encode the row for deletion.
      *
-     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]  $pks
+     * @param  \Dew\Tablestore\Cells\Cell[]  $pks
      */
     public function deleteRow(array $pks): self
     {

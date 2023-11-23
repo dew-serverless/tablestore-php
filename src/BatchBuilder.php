@@ -10,23 +10,19 @@ class BatchBuilder
     use HasConditions;
 
     /**
-     * The operation type.
+     * The table name.
      */
-    public ?int $operation = null;
+    public string $table;
 
     /**
      * The row writer.
      */
-    public ?RowWriter $row = null;
+    public RowWriter $row;
 
     /**
-     * Create a batch builder.
+     * The operation type.
      */
-    public function __construct(
-        protected string $table
-    ) {
-        //
-    }
+    public ?int $operation = null;
 
     /**
      * Query rows from table.
@@ -34,7 +30,7 @@ class BatchBuilder
     public function get(): void
     {
         $this->operation = null;
-        $this->row = $this->newRow()->addRow($this->wheres);
+        $this->row = $this->newRow()->addRow($this->whereKeys);
     }
 
     /**
@@ -51,12 +47,12 @@ class BatchBuilder
     /**
      * Modify the existing attributes in table.
      *
-     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\Attribute)[]  $attributes
+     * @param  \Dew\Tablestore\Cells\Cell[]  $attributes
      */
     public function update(array $attributes): void
     {
         $this->operation = OperationType::UPDATE;
-        $this->row = $this->newRow()->addRow([...$this->wheres, ...$attributes]);
+        $this->row = $this->newRow()->addRow([...$this->whereKeys, ...$attributes]);
     }
 
     /**
@@ -65,7 +61,7 @@ class BatchBuilder
     public function delete(): void
     {
         $this->operation = OperationType::DELETE;
-        $this->row = $this->newRow()->deleteRow($this->wheres);
+        $this->row = $this->newRow()->deleteRow($this->whereKeys);
     }
 
     /**
@@ -79,7 +75,17 @@ class BatchBuilder
     }
 
     /**
-     * The table name.
+     * Set the table name.
+     */
+    public function setTable(string $table): self
+    {
+        $this->table = $table;
+
+        return $this;
+    }
+
+    /**
+     * Get the table name.
      */
     public function getTable(): string
     {

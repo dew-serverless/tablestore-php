@@ -81,6 +81,24 @@ class Attribute
     }
 
     /**
+     * Create an attribute based on the type of the given value.
+     *
+     * @return \Dew\Tablestore\Cells\Attribute&\Dew\Tablestore\Contracts\HasValue
+     */
+    public static function createFromValue(string $name, mixed $value): Cells\Attribute
+    {
+        return match (gettype($value)) {
+            'boolean' => static::boolean($name, $value),
+            'double' => static::double($name, $value),
+            'integer' => static::integer($name, $value),
+            'string' => static::string($name, $value),
+            default => throw new \InvalidArgumentException(sprintf(
+                'Could not build an attribute from the [%s] type.', gettype($value)
+            )),
+        };
+    }
+
+    /**
      * Get the attribute class by the given type.
      *
      * @return class-string<\Dew\Tablestore\Cells\Cell>

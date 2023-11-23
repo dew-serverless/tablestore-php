@@ -2,20 +2,21 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Concerns\InteractsWithRequest;
 use Dew\Tablestore\Exceptions\BatchHandlerException;
 use Google\Protobuf\Internal\Message;
 use Protos\BatchGetRowRequest;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowRequest;
 use Protos\BatchWriteRowResponse;
-use Protos\Condition;
-use Protos\ReturnContent;
 use Protos\RowInBatchWriteRowRequest;
 use Protos\TableInBatchGetRowRequest;
 use Protos\TableInBatchWriteRowRequest;
 
 class BatchHandler
 {
+    use InteractsWithRequest;
+
     /**
      * Create a new batch handler.
      */
@@ -89,13 +90,12 @@ class BatchHandler
      */
     protected function extractPayloadFromRead(array $builders): array
     {
-        // @phpstan-ignore-next-line
         return array_reduce($builders, function (array $carry, BatchBuilder $builder): array {
-            $buffer = $builder->row?->getBuffer();
-
-            if ($buffer === null) {
+            if (! isset($builder->row)) {
                 throw new BatchHandlerException('The statement is incomplete.');
             }
+
+            $buffer = $builder->row->getBuffer();
 
             if ($builder->isWrite()) {
                 throw new BatchHandlerException('Could not mix read and write operations in one batch.');
@@ -151,28 +151,21 @@ class BatchHandler
      */
     protected function toChangesRequest(BatchBuilder $builder): RowInBatchWriteRowRequest
     {
-        $buffer = $builder->row?->getBuffer();
-
-        if ($buffer === null) {
+        if (! isset($builder->row)) {
             throw new BatchHandlerException('The statement is incomplete.');
         }
+
+        $buffer = $builder->row->getBuffer();
 
         if ($builder->isRead()) {
             throw new BatchHandlerException('Could not mix read and write operations in one batch.');
         }
 
-        $condition = new Condition;
-        $condition->setRowExistence($builder->expectation);
-
-        $content = new ReturnContent;
-        $content->setReturnType($builder->returned);
-        $content->setReturnColumnNames($builder->selects);
-
         return (new RowInBatchWriteRowRequest)
             ->setType($builder->operation ?? throw new BatchHandlerException('The statement is incomplete.'))
             ->setRowChange($buffer)
-            ->setCondition($condition)
-            ->setReturnContent($content);
+            ->setCondition($this->toCondition($builder))
+            ->setReturnContent($this->toReturnContent($builder));
     }
 
     /**
