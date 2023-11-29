@@ -9,6 +9,7 @@ use Protos\BatchGetRowRequest;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowRequest;
 use Protos\BatchWriteRowResponse;
+use Protos\Filter;
 use Protos\RowInBatchWriteRowRequest;
 use Protos\TableInBatchGetRowRequest;
 use Protos\TableInBatchWriteRowRequest;
@@ -70,13 +71,19 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            [$pks, $selects, $takes] = $this->extractPayloadFromRead($builders);
+            [$pks, $selects, $takes, $filter] = $this->extractPayloadFromRead($builders);
 
-            $tables[] = (new TableInBatchGetRowRequest)
+            $request = (new TableInBatchGetRowRequest)
                 ->setTableName($table)
                 ->setPrimaryKey($pks)
                 ->setColumnsToGet($selects)
                 ->setMaxVersions($takes);
+
+            if ($filter instanceof Filter) {
+                $request->setFilter($filter->serializeToString());
+            }
+
+            $tables[] = $request;
         }
 
         return $tables;
@@ -86,7 +93,7 @@ class BatchHandler
      * Extract payload from a list of read builders.
      *
      * @param  \Dew\Tablestore\BatchBuilder[]  $builders
-     * @return array{0: string[], 1: string[], 2: positive-int}
+     * @return array{0: string[], 1: string[], 2: positive-int, 3: \Protos\Filter|null}
      */
     protected function extractPayloadFromRead(array $builders): array
     {
@@ -110,8 +117,11 @@ class BatchHandler
             // takes: retrieve the maximal value version from builders.
             $carry[2] = max($carry[2], $builder->takes);
 
+            // filter: override with the last occurrence of the row filter.
+            $carry[3] = $builder->filter ?? $carry[3];
+
             return $carry;
-        }, [[], [], 0]);
+        }, [[], [], 0, null]);
     }
 
     /**

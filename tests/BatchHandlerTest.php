@@ -6,6 +6,8 @@ use Dew\Tablestore\BatchHandler;
 use Dew\Tablestore\Exceptions\BatchHandlerException;
 use Dew\Tablestore\PrimaryKey;
 use Dew\Tablestore\Tablestore;
+use Protos\Filter;
+use Protos\FilterType;
 use Protos\ReturnType;
 use Protos\RowExistenceExpectation;
 
@@ -45,6 +47,28 @@ test('read calculates the max value version', function () {
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
     $tables = $handler->buildReadTables($bag);
     expect($tables[0]->getMaxVersions())->toBe(3);
+});
+
+test('read has no filter by default', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->hasFilter())->toBeFalse();
+});
+
+test('read retrieves the last occurrence of filter', function () {
+    $filter1 = (new Filter)->setType(FilterType::FT_COLUMN_PAGINATION);
+    $filter2 = (new Filter)->setType(FilterType::FT_COMPOSITE_COLUMN_VALUE);
+    $bag = new BatchBag;
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->whereFilter($filter1)->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->whereFilter($filter2)->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'baz')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->getFilter())->toBe($filter2->serializeToString())
+        ->and($filter1->serializeToString())->not->toBe($filter2->serializeToString());
 });
 
 test('write with row expectation', function () {
