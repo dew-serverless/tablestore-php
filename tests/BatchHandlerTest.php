@@ -71,6 +71,21 @@ test('read retrieves the last occurrence of filter', function () {
         ->and($filter1->serializeToString())->not->toBe($filter2->serializeToString());
 });
 
+test('read configures query at one place', function () {
+    $filter = (new Filter)->setFilter(FilterType::FT_SINGLE_COLUMN_VALUE);
+    $bag = new BatchBag;
+    $bag->table('testing')->select(['key', 'attr1'])->whereFilter($filter)->take(2);
+    $bag->table('testing')->where([$pk1 = PrimaryKey::string('key', 'foo')])->get();
+    $bag->table('testing')->where([$pk2 = PrimaryKey::string('key', 'bar')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->getColumnsToGet()[0])->toBe('key')
+        ->and($tables[0]->getColumnsToGet()[1])->toBe('attr1')
+        ->and($tables[0]->getFilter())->toBe($filter->serializeToString())
+        ->and($tables[0]->getMaxVersions())->toBe(2)
+        ->and($tables[0]->getPrimaryKey())->toHaveCount(2);
+});
+
 test('write with row expectation', function () {
     $bag = new BatchBag;
     $bag->table('testing')->where([
@@ -129,7 +144,7 @@ test('bag contains incomplete statement', function () {
 
 test('read bag contains incomplete statement', function () {
     $bag = new BatchBag;
-    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')]);
     $bag->table('testing');
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
     expect(fn () => $handler->handle($bag))

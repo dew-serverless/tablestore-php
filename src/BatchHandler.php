@@ -97,19 +97,15 @@ class BatchHandler
      */
     protected function extractPayloadFromRead(array $builders): array
     {
-        return array_reduce($builders, function (array $carry, BatchBuilder $builder): array {
-            if (! isset($builder->row)) {
-                throw new BatchHandlerException('The statement is incomplete.');
-            }
-
-            $buffer = $builder->row->getBuffer();
-
+        $payload = array_reduce($builders, function (array $carry, BatchBuilder $builder): array {
             if ($builder->isWrite()) {
                 throw new BatchHandlerException('Could not mix read and write operations in one batch.');
             }
 
-            // pks: combine the buffer in each builder.
-            $carry[0][] = $buffer;
+            if (isset($builder->row)) {
+                // pks: combine the buffer in each builder.
+                $carry[0][] = $builder->row->getBuffer();
+            }
 
             // selects: combine the selected columns in each builder.
             $carry[1] = [...$carry[1], ...$builder->selects];
@@ -122,6 +118,13 @@ class BatchHandler
 
             return $carry;
         }, [[], [], 0, null]);
+
+        // Primary keys are required to retrieve rows from a table.
+        if ($payload[0] === []) {
+            throw new BatchHandlerException('The statement is incomplete.');
+        }
+
+        return $payload;
     }
 
     /**
