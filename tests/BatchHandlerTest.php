@@ -110,6 +110,19 @@ test('write with returned row customization', function () {
     expect($tables[0]->getRows()[0]->getReturnContent()->getReturnType())->toBe(ReturnType::RT_AFTER_MODIFY);
 });
 
+test('write with condition update', function () {
+    $filter = (new Filter)->setType(FilterType::FT_SINGLE_COLUMN_VALUE);
+    $bag = new BatchBag;
+    $bag->table('testing')->where([
+        PrimaryKey::string('key', 'foo'),
+    ])->whereFilter($filter)->update([
+        Attribute::string('value', 'bar'),
+    ]);
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildWriteTables($bag);
+    expect($tables[0]->getRows()[0]->getCondition()->hasColumnCondition())->toBeTrue();
+});
+
 test('read could not read and write in one batch', function () {
     $bag = new BatchBag;
     $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
