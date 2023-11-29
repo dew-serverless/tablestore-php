@@ -7,7 +7,6 @@ use Dew\Tablestore\Responses\RowDecodableResponse;
 use Google\Protobuf\Internal\Message;
 use Protos\DeleteRowRequest;
 use Protos\DeleteRowResponse;
-use Protos\Filter;
 use Protos\GetRowRequest;
 use Protos\GetRowResponse;
 use Protos\PutRowRequest;
@@ -115,30 +114,6 @@ class Handler
         return $this->tablestore->send($endpoint, $message)
             ->getBody()
             ->getContents();
-    }
-
-    /**
-     * Determine if the builder contains any filter conditions.
-     */
-    public function shouldBuildFilter(Builder $builder): bool
-    {
-        if ($builder->filter instanceof Filter) {
-            return true;
-        }
-
-        return $builder->wheres !== [];
-    }
-
-    /**
-     * Build Protobuf filter message from the builder.
-     */
-    public function buildFilter(Builder $builder): Filter
-    {
-        if ($builder->filter instanceof Filter) {
-            return $builder->filter;
-        }
-
-        return (new FilterBuilder($builder->wheres))->toFilter();
     }
 
     /**

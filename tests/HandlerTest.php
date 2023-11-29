@@ -6,6 +6,7 @@ use Dew\Tablestore\Handler;
 use Dew\Tablestore\PrimaryKey;
 use Dew\Tablestore\Tablestore;
 use Protos\Filter;
+use Protos\FilterType;
 
 test('filter build determination primary keys', function () {
     $handler = new Handler(Mockery::mock(Tablestore::class));
@@ -76,4 +77,14 @@ test('build filter group', function () {
         ->and($filter->getSubFilters())->toHaveCount(2)
         ->and($filter->getSubFilters()[0])->toBeSingleValueFilter()
         ->and($filter->getSubFilters()[1])->toBeSingleValueFilter();
+});
+
+test('condition update', function () {
+    $filter = (new Filter)->setType(FilterType::FT_SINGLE_COLUMN_VALUE);
+    $handler = new Handler(Mockery::mock(Tablestore::class));
+    $builder = (new Builder)->handlerUsing($handler);
+    $builder->setTable('test')
+        ->whereKey([PrimaryKey::string('key', 'foo')])
+        ->whereFilter($filter);
+    expect($handler->toCondition($builder)->hasColumnCondition())->toBeTrue();
 });
