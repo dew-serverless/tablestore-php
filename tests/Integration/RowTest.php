@@ -70,7 +70,7 @@ test('data can be retrieved', function () {
 test('data retrieval with maximal versions', function () {
     $response = tablestore()->table('testing_items')->where([
         PrimaryKey::string('key', 'timestamps'),
-    ])->take(2)->get();
+    ])->maxVersions(2)->get();
 
     $row = $response->getDecodedRow();
 

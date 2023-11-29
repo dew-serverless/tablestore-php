@@ -46,7 +46,7 @@ trait HasConditions
     /**
      * The maximal value version to retrieve with.
      */
-    public int $takes = 1;
+    public int $maxVersions = 1;
 
     /**
      * The row existence expectation.
@@ -291,9 +291,9 @@ trait HasConditions
     /**
      * Limit the maximal value version to retrieve with.
      */
-    public function take(int $versions): self
+    public function maxVersions(int $max): self
     {
-        $this->takes = $versions;
+        $this->maxVersions = $max;
 
         return $this;
     }

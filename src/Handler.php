@@ -94,7 +94,7 @@ class Handler
         $request->setTableName($builder->getTable());
         $request->setPrimaryKey($builder->row->getBuffer());
         $request->setColumnsToGet($builder->selects);
-        $request->setMaxVersions($builder->takes);
+        $request->setMaxVersions($builder->maxVersions);
 
         if ($this->shouldBuildFilter($builder)) {
             $request->setFilter($this->buildFilter($builder)->serializeToString());

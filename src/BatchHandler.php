@@ -111,7 +111,7 @@ class BatchHandler
             $carry[1] = [...$carry[1], ...$builder->selects];
 
             // takes: retrieve the maximal value version from builders.
-            $carry[2] = max($carry[2], $builder->takes);
+            $carry[2] = max($carry[2], $builder->maxVersions);
 
             // filter: override with the last occurrence of the row filter.
             $carry[3] = $builder->filter ?? $carry[3];

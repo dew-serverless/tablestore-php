@@ -42,8 +42,8 @@ test('read retrieves at most one value version by default', function () {
 
 test('read calculates the max value version', function () {
     $bag = new BatchBag;
-    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->take(3)->get();
-    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->take(2)->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->maxVersions(3)->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->maxVersions(2)->get();
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
     $tables = $handler->buildReadTables($bag);
     expect($tables[0]->getMaxVersions())->toBe(3);
@@ -74,7 +74,7 @@ test('read retrieves the last occurrence of filter', function () {
 test('read configures query at one place', function () {
     $filter = (new Filter)->setFilter(FilterType::FT_SINGLE_COLUMN_VALUE);
     $bag = new BatchBag;
-    $bag->table('testing')->select(['key', 'attr1'])->whereFilter($filter)->take(2);
+    $bag->table('testing')->select(['key', 'attr1'])->whereFilter($filter)->maxVersions(2);
     $bag->table('testing')->where([$pk1 = PrimaryKey::string('key', 'foo')])->get();
     $bag->table('testing')->where([$pk2 = PrimaryKey::string('key', 'bar')])->get();
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
