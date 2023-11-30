@@ -7,7 +7,7 @@ use Protos\Filter;
 /**
  * @phpstan-type TCondition array{comparison: string, column: \Dew\Tablestore\Cells\Cell, logical: string, negative?: bool}
  */
-class FilterBuilder
+class ConditionFilter
 {
     /**
      * Create a filter builder.

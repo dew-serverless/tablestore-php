@@ -13,7 +13,7 @@ parameters:
     ignoreErrors:
         -
             message: '#Call to function is_array\(\) with Dew\\Tablestore\\Cells\\Cell will always evaluate to false.#'
-            path: src/FilterBuilder.php
+            path: src/ConditionFilter.php
 
         -
             message: '#Property [a-zA-Z0-9\\_]+::\$wheres .* does not accept .*#'

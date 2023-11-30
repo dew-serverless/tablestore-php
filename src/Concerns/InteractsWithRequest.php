@@ -4,7 +4,7 @@ namespace Dew\Tablestore\Concerns;
 
 use Dew\Tablestore\BatchBuilder;
 use Dew\Tablestore\Builder;
-use Dew\Tablestore\FilterBuilder;
+use Dew\Tablestore\ConditionFilter;
 use Dew\Tablestore\PaginationFilter;
 use Protos\Condition;
 use Protos\Filter;
@@ -66,7 +66,7 @@ trait InteractsWithRequest
         }
 
         if ($builder->wheres !== []) {
-            return (new FilterBuilder($builder->wheres))->toFilter();
+            return (new ConditionFilter($builder->wheres))->toFilter();
         }
 
         if (is_int($builder->offset) && is_int($builder->limit)) {

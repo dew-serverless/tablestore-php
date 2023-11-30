@@ -1,17 +1,17 @@
 <?php
 
 use Dew\Tablestore\Attribute;
-use Dew\Tablestore\FilterBuilder;
+use Dew\Tablestore\ConditionFilter;
 
 test('single condition', function () {
     // expression: attr1 = 'foo'
-    $builder = new FilterBuilder([['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and']]);
+    $builder = new ConditionFilter([['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and']]);
     expect($builder->toFilter())->toBeSingleValueFilter();
 });
 
 test('single condition not', function () {
     // expression: not attr1 = 'foo'
-    $builder = new FilterBuilder([['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and', 'negative' => true]]);
+    $builder = new ConditionFilter([['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and', 'negative' => true]]);
     expect($filter = $builder->toFilter())->toBeCompositeValueFilter()
         ->and($filter = unwrapFilter($filter))
         ->and($filter->getCombinator())->toBeLogicalNot()
@@ -21,7 +21,7 @@ test('single condition not', function () {
 
 test('single condition group', function () {
     // expression: (attr1 = 'foo')
-    $builder = new FilterBuilder([[
+    $builder = new ConditionFilter([[
         'comparison' => '=',
         'column' => [['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and']],
         'logical' => 'and',
@@ -31,7 +31,7 @@ test('single condition group', function () {
 
 test('single condition negation group', function () {
     // expression: not (attr1 = 'foo')
-    $builder = new FilterBuilder([[
+    $builder = new ConditionFilter([[
         'comparison' => '=',
         'column' => [['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and']],
         'logical' => 'and',
@@ -47,7 +47,7 @@ test('single condition negation group', function () {
 
 test('multiple conditions and', function () {
     // expression: attr1 = 'foo' and attr2 = 'bar'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and'],
     ]);
@@ -66,7 +66,7 @@ test('multiple conditions and', function () {
 
 test('multiple conditions or', function () {
     // expression: attr1 = 'foo' or attr2 = 'bar'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or'],
     ]);
@@ -89,7 +89,7 @@ test('multiple conditions or or', function () {
     // The test case is the same as the one above, and we intentionally add
     // it cause it covers the scenario when user building a query filter
     // with the method "orWhere" chaining to right from the beginning.
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'or'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or'],
     ]);
@@ -108,7 +108,7 @@ test('multiple conditions or or', function () {
 
 test('multiple conditions and-not', function () {
     // expression: not attr1 = 'foo' and not attr2 = 'bar'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and', 'negative' => true],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and', 'negative' => true],
     ]);
@@ -127,7 +127,7 @@ test('multiple conditions and-not', function () {
 
 test('multiple conditions or-not', function () {
     // expression: not attr1 = 'foo' or not attr2 = 'bar'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and', 'negative' => true],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or', 'negative' => true],
     ]);
@@ -146,7 +146,7 @@ test('multiple conditions or-not', function () {
 
 test('operator precedence and', function () {
     // expression: attr1 = 'foo' and attr2 = 'bar' and attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'and'],
@@ -167,7 +167,7 @@ test('operator precedence and', function () {
 
 test('operator precedence and or', function () {
     // expression: attr1 = 'foo' and attr2 = 'bar' or attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'or'],
@@ -196,7 +196,7 @@ test('operator precedence and or', function () {
 
 test('operator precedence and and-not', function () {
     // expression: attr1 = 'foo' and attr2 = 'bar' and not attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'and', 'negative' => true],
@@ -225,7 +225,7 @@ test('operator precedence and and-not', function () {
 
 test('operator precedence and or-not', function () {
     // expression: attr1 = 'foo' and attr2 = 'bar' or not attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'or', 'negative' => true],
@@ -262,7 +262,7 @@ test('operator precedence and or-not', function () {
 
 test('operator precedence or', function () {
     // expression: attr1 = 'foo' or attr2 = 'bar' or attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'or'],
@@ -283,7 +283,7 @@ test('operator precedence or', function () {
 
 test('operator precedence or and', function () {
     // expression: attr1 = 'foo' or attr2 = 'bar' and attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'and'],
@@ -312,7 +312,7 @@ test('operator precedence or and', function () {
 
 test('operator precedence or and-not', function () {
     // expression: attr1 = 'foo' or attr2 = 'bar' and not attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'and', 'negative' => true],
@@ -349,7 +349,7 @@ test('operator precedence or and-not', function () {
 
 test('operator precedence or or-not', function () {
     // expression: attr1 = 'foo' or attr2 = 'bar' or not attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or'],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'or', 'negative' => true],
@@ -378,7 +378,7 @@ test('operator precedence or or-not', function () {
 
 test('operator precedence and-not and', function () {
     // expression: attr1 = 'foo' and not attr2 = 'bar' and attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and', 'negative' => true],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'and'],
@@ -407,7 +407,7 @@ test('operator precedence and-not and', function () {
 
 test('operator precedence and-not or', function () {
     // expression: attr1 = 'foo' and not attr2 = 'bar' or attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'and', 'negative' => true],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'or'],
@@ -444,7 +444,7 @@ test('operator precedence and-not or', function () {
 
 test('operator precedence or-not and', function () {
     // expression: attr1 = 'foo' or not attr2 = 'bar' and attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or', 'negative' => true],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'and'],
@@ -481,7 +481,7 @@ test('operator precedence or-not and', function () {
 
 test('operator precedence or-not or', function () {
     // expression: attr1 = 'foo' or not attr2 = 'bar' or attr3 = 'baz'
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         ['comparison' => '=', 'column' => Attribute::string('attr2', 'bar'), 'logical' => 'or', 'negative' => true],
         ['comparison' => '=', 'column' => Attribute::string('attr3', 'baz'), 'logical' => 'or'],
@@ -510,7 +510,7 @@ test('operator precedence or-not or', function () {
 
 test('grouping with and', function () {
     // expression: attr1 = 'foo' and (attr2 = 'bar' or attr3 = 'baz')
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         [
             'comparison' => '=',
@@ -545,7 +545,7 @@ test('grouping with and', function () {
 
 test('grouping with or', function () {
     // expression: attr1 = 'foo' or (attr2 = 'bar' or attr3 = 'baz')
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         [
             'comparison' => '=',
@@ -580,7 +580,7 @@ test('grouping with or', function () {
 
 test('grouping with and not', function () {
     // expression: attr1 = 'foo' and not (attr2 = 'bar' or attr3 = 'baz')
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         [
             'comparison' => '=',
@@ -624,7 +624,7 @@ test('grouping with and not', function () {
 
 test('grouping with or not', function () {
     // expression: attr1 = 'foo' or not (attr2 = 'bar' and attr3 = 'baz')
-    $builder = new FilterBuilder([
+    $builder = new ConditionFilter([
         ['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and'],
         [
             'comparison' => '=',

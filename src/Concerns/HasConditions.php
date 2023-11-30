@@ -11,7 +11,7 @@ use Protos\ReturnType;
 use Protos\RowExistenceExpectation;
 
 /**
- * @phpstan-import-type TCondition from \Dew\Tablestore\FilterBuilder
+ * @phpstan-import-type TCondition from \Dew\Tablestore\ConditionFilter
  *
  * @phpstan-type TColumn \Dew\Tablestore\Cells\Cell|callable(\Dew\Tablestore\Builder): void|\Dew\Tablestore\Cells\Cell[]|array{0: string, 1: mixed, 2?: mixed}[]|string
  */
