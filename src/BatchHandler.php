@@ -114,7 +114,9 @@ class BatchHandler
             $carry[2] = max($carry[2], $builder->maxVersions);
 
             // filter: override with the last occurrence of the row filter.
-            $carry[3] = $builder->filter ?? $carry[3];
+            $carry[3] = $this->shouldBuildFilter($builder)
+                ? $this->buildFilter($builder)
+                : $carry[3];
 
             return $carry;
         }, [[], [], 0, null]);

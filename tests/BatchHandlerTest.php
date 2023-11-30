@@ -71,6 +71,16 @@ test('read retrieves the last occurrence of filter', function () {
         ->and($filter1->serializeToString())->not->toBe($filter2->serializeToString());
 });
 
+test('read builds condition filter', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([
+        PrimaryKey::string('key', 'foo'),
+    ])->whereColumn('value', 'bar')->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->getFilter())->not->toBeEmpty();
+});
+
 test('read configures query at one place', function () {
     $filter = (new Filter)->setFilter(FilterType::FT_SINGLE_COLUMN_VALUE);
     $bag = new BatchBag;
