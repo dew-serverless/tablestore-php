@@ -5,9 +5,11 @@ namespace Dew\Tablestore\Concerns;
 use Dew\Tablestore\BatchBuilder;
 use Dew\Tablestore\Builder;
 use Dew\Tablestore\FilterBuilder;
+use Dew\Tablestore\PaginationFilter;
 use Protos\Condition;
 use Protos\Filter;
 use Protos\ReturnContent;
+use RuntimeException;
 
 trait InteractsWithRequest
 {
@@ -47,7 +49,11 @@ trait InteractsWithRequest
             return true;
         }
 
-        return $builder->wheres !== [];
+        if ($builder->wheres !== []) {
+            return true;
+        }
+
+        return is_int($builder->offset) && is_int($builder->limit);
     }
 
     /**
@@ -59,6 +65,15 @@ trait InteractsWithRequest
             return $builder->filter;
         }
 
-        return (new FilterBuilder($builder->wheres))->toFilter();
+        if ($builder->wheres !== []) {
+            return (new FilterBuilder($builder->wheres))->toFilter();
+        }
+
+        if (is_int($builder->offset) && is_int($builder->limit)) {
+            return (new PaginationFilter($builder->offset, $builder->limit))
+                ->toFilter();
+        }
+
+        throw new RuntimeException('Missing filter data to build with.');
     }
 }

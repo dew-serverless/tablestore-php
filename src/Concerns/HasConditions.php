@@ -59,6 +59,16 @@ trait HasConditions
     public int $returned = ReturnType::RT_PK;
 
     /**
+     * The number of columns to skip with.
+     */
+    public ?int $offset = null;
+
+    /**
+     * The maximal number of columns to retrieve with.
+     */
+    public ?int $limit = null;
+
+    /**
      * Select columns to retrieve with.
      *
      * @param  string[]  $cells
@@ -354,6 +364,20 @@ trait HasConditions
     public function returnModified(): self
     {
         $this->returned = ReturnType::RT_AFTER_MODIFY;
+
+        return $this;
+    }
+
+    /**
+     * Return part of a row.
+     *
+     * @param  positive-int  $offset
+     * @param  positive-int  $limit
+     */
+    public function offset(int $offset, int $limit): self
+    {
+        $this->offset = $offset;
+        $this->limit = $limit;
 
         return $this;
     }

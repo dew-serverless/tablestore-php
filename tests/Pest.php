@@ -50,6 +50,14 @@ expect()->extend('toBeCompositeValueFilter', function () {
     return $this;
 });
 
+expect()->extend('toBePaginationFilter', function () {
+    $this->toBeInstanceOf(Filter::class);
+
+    expect($this->value->getType())->toBe(FilterType::FT_COLUMN_PAGINATION);
+
+    return $this;
+});
+
 expect()->extend('toBeLogicalNot', fn () => $this->toBe(LogicalOperator::LO_NOT));
 expect()->extend('toBeLogicalAnd', fn () => $this->toBe(LogicalOperator::LO_AND));
 expect()->extend('toBeLogicalOr', fn () => $this->toBe(LogicalOperator::LO_OR));

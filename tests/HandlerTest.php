@@ -22,6 +22,13 @@ test('filter build determination attributes', function () {
     expect($handler->shouldBuildFilter($builder))->toBeTrue();
 });
 
+test('filter build determination pagination', function () {
+    $handler = new Handler(Mockery::mock(Tablestore::class));
+    $builder = new Builder;
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])->offset(1, 1);
+    expect($handler->shouldBuildFilter($builder))->toBeTrue();
+});
+
 test('filter build determination filter', function () {
     $handler = new Handler(Mockery::mock(Tablestore::class));
     $builder = new Builder;
@@ -87,4 +94,18 @@ test('condition update', function () {
         ->whereKey([PrimaryKey::string('key', 'foo')])
         ->whereFilter($filter);
     expect($handler->toCondition($builder)->hasColumnCondition())->toBeTrue();
+});
+
+test('pagination filter', function () {
+    $handler = new Handler(Mockery::mock(Tablestore::class));
+    $builder = new Builder;
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])->offset(1, 1);
+    expect($handler->buildFilter($builder))->toBePaginationFilter();
+});
+
+test('column condition has higher precedence than pagination', function () {
+    $handler = new Handler(Mockery::mock(Tablestore::class));
+    $builder = new Builder;
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])->whereColumn('value', 'bar')->offset(1, 1);
+    expect($handler->buildFilter($builder))->toBeSingleValueFilter();
 });
