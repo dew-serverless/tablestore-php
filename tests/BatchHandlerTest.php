@@ -31,6 +31,24 @@ test('read merges selected columns', function () {
         ->and($tables[0]->getColumnsToGet()[1])->toBe('value');
 });
 
+test('read retrieves the last occurrence of start column', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->selectUntil('attr2')->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->getStartColumn())->toBe('attr2');
+});
+
+test('read retrieves the last occurrence of end column', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->selectBefore('attr2')->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->getEndColumn())->toBe('attr2');
+});
+
 test('read retrieves at most one value version by default', function () {
     $bag = new BatchBag;
     $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
@@ -84,7 +102,11 @@ test('read builds condition filter', function () {
 test('read configures query at one place', function () {
     $filter = (new Filter)->setFilter(FilterType::FT_SINGLE_COLUMN_VALUE);
     $bag = new BatchBag;
-    $bag->table('testing')->select(['key', 'attr1'])->whereFilter($filter)->maxVersions(2);
+    $bag->table('testing')
+        ->select(['key', 'attr1'])
+        ->selectBetween('attr1', 'attr2')
+        ->whereFilter($filter)
+        ->maxVersions(2);
     $bag->table('testing')->where([$pk1 = PrimaryKey::string('key', 'foo')])->get();
     $bag->table('testing')->where([$pk2 = PrimaryKey::string('key', 'bar')])->get();
     $handler = new BatchHandler(Mockery::mock(Tablestore::class));
@@ -93,6 +115,8 @@ test('read configures query at one place', function () {
         ->and($tables[0]->getColumnsToGet()[1])->toBe('attr1')
         ->and($tables[0]->getFilter())->toBe($filter->serializeToString())
         ->and($tables[0]->getMaxVersions())->toBe(2)
+        ->and($tables[0]->getStartColumn())->toBe('attr1')
+        ->and($tables[0]->getEndColumn())->toBe('attr2')
         ->and($tables[0]->getPrimaryKey())->toHaveCount(2);
 });
 

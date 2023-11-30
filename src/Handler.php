@@ -96,6 +96,14 @@ class Handler
         $request->setColumnsToGet($builder->selects);
         $request->setMaxVersions($builder->maxVersions);
 
+        if (is_string($builder->selectStart)) {
+            $request->setStartColumn($builder->selectStart);
+        }
+
+        if (is_string($builder->selectStop)) {
+            $request->setEndColumn($builder->selectStop);
+        }
+
         if ($this->shouldBuildFilter($builder)) {
             $request->setFilter($this->buildFilter($builder)->serializeToString());
         }

@@ -25,6 +25,16 @@ trait HasConditions
     public array $selects = [];
 
     /**
+     * The beginning of the column selection range.
+     */
+    public ?string $selectStart = null;
+
+    /**
+     * The end of the column selection range.
+     */
+    public ?string $selectStop = null;
+
+    /**
      * The primary keys to filter the rows.
      *
      * @var \Dew\Tablestore\Cells\Cell[]
@@ -78,6 +88,34 @@ trait HasConditions
         $this->selects = $cells;
 
         return $this;
+    }
+
+    /**
+     * Specify the beginning of the column selection range.
+     */
+    public function selectUntil(string $column): self
+    {
+        $this->selectStart = $column;
+
+        return $this;
+    }
+
+    /**
+     * Specify the end of the column selection range.
+     */
+    public function selectBefore(string $column): self
+    {
+        $this->selectStop = $column;
+
+        return $this;
+    }
+
+    /**
+     * Specify the column selection range.
+     */
+    public function selectBetween(string $start, string $stop): self
+    {
+        return $this->selectUntil($start)->selectBefore($stop);
     }
 
     /**

@@ -280,6 +280,25 @@ test('where accepts filter message', function () {
     expect($builder->filter)->toBe($filter);
 });
 
+test('select from specifies the boundaries of the first column', function () {
+    $builder = new Builder;
+    $builder->selectUntil('attr2');
+    expect($builder->selectStart)->toBe('attr2');
+});
+
+test('select to specifies the boundaries of the last column', function () {
+    $builder = new Builder;
+    $builder->selectBefore('attr3');
+    expect($builder->selectStop)->toBe('attr3');
+});
+
+test('select between specifies the column boundaries', function () {
+    $builder = new Builder;
+    $builder->selectBetween('attr2', 'attr3');
+    expect($builder->selectStart)->toBe('attr2')
+        ->and($builder->selectStop)->toBe('attr3');
+});
+
 dataset('multiple attributes', [
     'name and values' => [[
         ['attr1', 'foo'],

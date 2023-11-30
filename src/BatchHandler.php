@@ -71,7 +71,8 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            [$pks, $selects, $takes, $filter] = $this->extractPayloadFromRead($builders);
+            [$pks, $selects, $takes, $filter, $selectStart, $selectStop]
+                = $this->extractPayloadFromRead($builders);
 
             $request = (new TableInBatchGetRowRequest)
                 ->setTableName($table)
@@ -81,6 +82,14 @@ class BatchHandler
 
             if ($filter instanceof Filter) {
                 $request->setFilter($filter->serializeToString());
+            }
+
+            if (is_string($selectStart)) {
+                $request->setStartColumn($selectStart);
+            }
+
+            if (is_string($selectStop)) {
+                $request->setEndColumn($selectStop);
             }
 
             $tables[] = $request;
@@ -93,7 +102,7 @@ class BatchHandler
      * Extract payload from a list of read builders.
      *
      * @param  \Dew\Tablestore\BatchBuilder[]  $builders
-     * @return array{0: string[], 1: string[], 2: positive-int, 3: \Protos\Filter|null}
+     * @return array{0: string[], 1: string[], 2: positive-int, 3: \Protos\Filter|null, 4: string|null, 5: string|null}
      */
     protected function extractPayloadFromRead(array $builders): array
     {
@@ -118,8 +127,13 @@ class BatchHandler
                 ? $this->buildFilter($builder)
                 : $carry[3];
 
+            // column selection range: start, stop
+            // override with the last occurrence of the selection.
+            $carry[4] = $builder->selectStart ?? $carry[4];
+            $carry[5] = $builder->selectStop ?? $carry[5];
+
             return $carry;
-        }, [[], [], 0, null]);
+        }, [[], [], 0, null, null, null]);
 
         // Primary keys are required to retrieve rows from a table.
         if ($payload[0] === []) {
