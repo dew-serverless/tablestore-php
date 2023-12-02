@@ -5,6 +5,7 @@ use Dew\Tablestore\Builder;
 use Dew\Tablestore\Handler;
 use Dew\Tablestore\PrimaryKey;
 use Dew\Tablestore\Tablestore;
+use GuzzleHttp\Psr7\Response;
 use Protos\Filter;
 use Protos\FilterType;
 
@@ -108,4 +109,14 @@ test('column condition has higher precedence than pagination', function () {
     $builder = new Builder;
     $builder->whereKey([PrimaryKey::string('key', 'foo')])->whereColumn('value', 'bar')->offset(1, 1);
     expect($handler->buildFilter($builder))->toBeSingleValueFilter();
+});
+
+test('get row sends with time range', function () {
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()
+        ->send('/GetRow', Mockery::on(fn ($request) => $request->hasTimeRange()))
+        ->andReturns(new Response);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])->whereVersion(1234567891011)->get();
 });

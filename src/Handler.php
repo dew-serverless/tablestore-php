@@ -11,6 +11,7 @@ use Protos\GetRowRequest;
 use Protos\GetRowResponse;
 use Protos\PutRowRequest;
 use Protos\PutRowResponse;
+use Protos\TimeRange;
 use Protos\UpdateRowRequest;
 use Protos\UpdateRowResponse;
 
@@ -102,6 +103,10 @@ class Handler
 
         if (is_string($builder->selectStop)) {
             $request->setEndColumn($builder->selectStop);
+        }
+
+        if ($builder->version instanceof TimeRange) {
+            $request->setTimeRange($builder->version);
         }
 
         if ($this->shouldBuildFilter($builder)) {
