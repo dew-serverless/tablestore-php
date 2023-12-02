@@ -77,11 +77,14 @@ class BatchHandler
             $request = (new TableInBatchGetRowRequest)
                 ->setTableName($table)
                 ->setPrimaryKey($payload['pks'])
-                ->setColumnsToGet($payload['selects'])
-                ->setMaxVersions($payload['versions']);
+                ->setColumnsToGet($payload['selects']);
 
             if ($payload['time'] instanceof TimeRange) {
                 $request->setTimeRange($payload['time']);
+            }
+
+            if (is_int($payload['versions'])) {
+                $request->setMaxVersions($payload['versions']);
             }
 
             if ($payload['filter'] instanceof Filter) {
@@ -110,7 +113,7 @@ class BatchHandler
      *   pks: string[],
      *   selects: string[],
      *   time: \Protos\TimeRange|null,
-     *   versions: positive-int,
+     *   versions: positive-int|null,
      *   filter: \Protos\Filter|null,
      *   start: string|null,
      *   stop: string|null
@@ -135,7 +138,9 @@ class BatchHandler
             $carry['time'] = $builder->version ?? $carry['time'];
 
             // versions: retrieve the maximal value version from builders.
-            $carry['versions'] = max($carry['versions'], $builder->maxVersions);
+            $carry['versions'] = is_int($builder->maxVersions)
+                ? max($carry['versions'] ?? 0, $builder->maxVersions)
+                : $carry['versions'];
 
             // filter: override with the last occurrence of the row filter.
             $carry['filter'] = $this->shouldBuildFilter($builder)
@@ -152,7 +157,7 @@ class BatchHandler
             'pks' => [],
             'selects' => [],
             'time' => null,
-            'versions' => 1,
+            'versions' => null,
             'filter' => null,
             'start' => null,
             'stop' => null,
@@ -161,6 +166,11 @@ class BatchHandler
         // Primary keys are required to retrieve rows from a table.
         if ($payload['pks'] === []) {
             throw new BatchHandlerException('The statement is incomplete.');
+        }
+
+        // Requires at least one of the time range and max versions.
+        if ($payload['time'] === null && $payload['versions'] === null) {
+            $payload['versions'] = 1;
         }
 
         return $payload;

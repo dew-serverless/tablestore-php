@@ -79,6 +79,19 @@ test('read calculates the max value version', function () {
     expect($tables[0]->getMaxVersions())->toBe(3);
 });
 
+test('read without default max versions when time range specified', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')
+        ->where([PrimaryKey::string('key', 'foo')])
+        ->whereVersion(1234567891011)
+        ->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->hasTimeRange())->toBeTrue()
+        ->and($tables[0]->hasMaxVersions())->toBeFalse();
+});
+
 test('read has no filter by default', function () {
     $bag = new BatchBag;
     $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();
@@ -118,6 +131,7 @@ test('read configures query at one place', function () {
         ->select(['key', 'attr1'])
         ->selectBetween('attr1', 'attr2')
         ->whereFilter($filter)
+        ->whereVersion(1234567891011)
         ->maxVersions(2);
     $bag->table('testing')->where([$pk1 = PrimaryKey::string('key', 'foo')])->get();
     $bag->table('testing')->where([$pk2 = PrimaryKey::string('key', 'bar')])->get();
@@ -126,6 +140,7 @@ test('read configures query at one place', function () {
     expect($tables[0]->getColumnsToGet()[0])->toBe('key')
         ->and($tables[0]->getColumnsToGet()[1])->toBe('attr1')
         ->and($tables[0]->getFilter())->toBe($filter->serializeToString())
+        ->and($tables[0]->getTimeRange()->getSpecificTime())->toBe(1234567891011)
         ->and($tables[0]->getMaxVersions())->toBe(2)
         ->and($tables[0]->getStartColumn())->toBe('attr1')
         ->and($tables[0]->getEndColumn())->toBe('attr2')
