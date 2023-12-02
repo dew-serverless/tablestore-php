@@ -140,3 +140,32 @@ test('get row sends with time range', function () {
     $builder = (new Builder)->setTable('test')->handlerUsing($handler);
     $builder->whereKey([PrimaryKey::string('key', 'foo')])->whereVersion(1234567891011)->get();
 });
+
+test('get row sends with time range without default max versions', function () {
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()
+        ->send('/GetRow', Mockery::on(fn ($request) => $request->hasTimeRange()
+            && ! $request->hasMaxVersions())
+        )
+        ->andReturns(new Response);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])
+        ->whereVersion(1234567891011)
+        ->get();
+});
+
+test('get row sends with time range and max versions', function () {
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()
+        ->send('/GetRow', Mockery::on(fn ($request) => $request->hasTimeRange()
+             && $request->getMaxVersions() === 2
+        ))
+        ->andReturns(new Response);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])
+        ->whereVersion(1234567891011)
+        ->maxVersions(2)
+        ->get();
+});

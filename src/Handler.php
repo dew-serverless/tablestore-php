@@ -95,7 +95,10 @@ class Handler
         $request->setTableName($builder->getTable());
         $request->setPrimaryKey($builder->row->getBuffer());
         $request->setColumnsToGet($builder->selects);
-        $request->setMaxVersions($builder->maxVersions);
+
+        if (is_int($builder->maxVersions) || ! $builder->version instanceof TimeRange) {
+            $request->setMaxVersions($builder->maxVersions ?? 1);
+        }
 
         if (is_string($builder->selectStart)) {
             $request->setStartColumn($builder->selectStart);

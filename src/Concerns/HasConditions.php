@@ -63,7 +63,7 @@ trait HasConditions
     /**
      * The maximal value version to retrieve with.
      */
-    public int $maxVersions = 1;
+    public ?int $maxVersions = null;
 
     /**
      * The row existence expectation.
