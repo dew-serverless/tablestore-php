@@ -79,11 +79,15 @@ trait HasConditions
 
     /**
      * The number of columns to skip with.
+     *
+     * @var positive-int|null
      */
     public ?int $offset = null;
 
     /**
      * The maximal number of columns to retrieve with.
+     *
+     * @var positive-int|null
      */
     public ?int $limit = null;
 
