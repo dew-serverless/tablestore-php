@@ -49,6 +49,18 @@ test('read retrieves the last occurrence of end column', function () {
     expect($tables[0]->getEndColumn())->toBe('attr2');
 });
 
+test('read retrieves the last occurrence of the time range', function () {
+    $bag = new BatchBag;
+    $bag->table('testing')
+        ->where([PrimaryKey::string('key', 'foo')])
+        ->whereVersion(1234567891011)
+        ->get();
+    $bag->table('testing')->where([PrimaryKey::string('key', 'bar')])->get();
+    $handler = new BatchHandler(Mockery::mock(Tablestore::class));
+    $tables = $handler->buildReadTables($bag);
+    expect($tables[0]->getTimeRange()->getSpecificTime())->toBe(1234567891011);
+});
+
 test('read retrieves at most one value version by default', function () {
     $bag = new BatchBag;
     $bag->table('testing')->where([PrimaryKey::string('key', 'foo')])->get();

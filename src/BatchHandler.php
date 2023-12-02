@@ -13,6 +13,7 @@ use Protos\Filter;
 use Protos\RowInBatchWriteRowRequest;
 use Protos\TableInBatchGetRowRequest;
 use Protos\TableInBatchWriteRowRequest;
+use Protos\TimeRange;
 
 class BatchHandler
 {
@@ -79,6 +80,10 @@ class BatchHandler
                 ->setColumnsToGet($payload['selects'])
                 ->setMaxVersions($payload['versions']);
 
+            if ($payload['time'] instanceof TimeRange) {
+                $request->setTimeRange($payload['time']);
+            }
+
             if ($payload['filter'] instanceof Filter) {
                 $request->setFilter($payload['filter']->serializeToString());
             }
@@ -104,6 +109,7 @@ class BatchHandler
      * @return array{
      *   pks: string[],
      *   selects: string[],
+     *   time: \Protos\TimeRange|null,
      *   versions: positive-int,
      *   filter: \Protos\Filter|null,
      *   start: string|null,
@@ -125,6 +131,9 @@ class BatchHandler
             // selects: combine the selected columns in each builder.
             $carry['selects'] = [...$carry['selects'], ...$builder->selects];
 
+            // time: override with the last occurrence of the time range.
+            $carry['time'] = $builder->version ?? $carry['time'];
+
             // versions: retrieve the maximal value version from builders.
             $carry['versions'] = max($carry['versions'], $builder->maxVersions);
 
@@ -142,6 +151,7 @@ class BatchHandler
         }, [
             'pks' => [],
             'selects' => [],
+            'time' => null,
             'versions' => 1,
             'filter' => null,
             'start' => null,
