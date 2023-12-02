@@ -111,6 +111,26 @@ test('column condition has higher precedence than pagination', function () {
     expect($handler->buildFilter($builder))->toBeSingleValueFilter();
 });
 
+test('get row sends with max versions', function () {
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()
+        ->send('/GetRow', Mockery::on(fn ($request) => $request->getMaxVersions() === 2))
+        ->andReturns(new Response);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])->maxVersions(2)->get();
+});
+
+test('get row sends with default max versions 1', function () {
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()
+        ->send('/GetRow', Mockery::on(fn ($request) => $request->getMaxVersions() === 1))
+        ->andReturns(new Response);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    $builder->whereKey([PrimaryKey::string('key', 'foo')])->get();
+});
+
 test('get row sends with time range', function () {
     $mockedTs = Mockery::mock(Tablestore::class);
     $mockedTs->expects()
