@@ -2,6 +2,7 @@
 
 namespace Dew\Tablestore\Concerns;
 
+use DateTimeInterface;
 use Dew\Tablestore\Attribute;
 use Dew\Tablestore\Builder;
 use Dew\Tablestore\Cells\Cell;
@@ -9,6 +10,7 @@ use Dew\Tablestore\Contracts\PrimaryKey;
 use Protos\Filter;
 use Protos\ReturnType;
 use Protos\RowExistenceExpectation;
+use Protos\TimeRange;
 
 /**
  * @phpstan-import-type TCondition from \Dew\Tablestore\ConditionFilter
@@ -47,6 +49,11 @@ trait HasConditions
      * @var TCondition[]
      */
     public array $wheres = [];
+
+    /**
+     * The version to filter attribute columns.
+     */
+    public ?TimeRange $version = null;
 
     /**
      * The filter applied to the query.
@@ -337,6 +344,64 @@ trait HasConditions
     }
 
     /**
+     * Include only the columns where the version is the same as.
+     */
+    public function whereVersion(TimeRange|DateTimeInterface|int $timestamp): self
+    {
+        $timestamp = $timestamp instanceof TimeRange
+            ? $timestamp->getSpecificTime()
+            : $this->normalizeVersion($timestamp);
+
+        $this->version = (new TimeRange)->setSpecificTime($timestamp);
+
+        return $this;
+    }
+
+    /**
+     * Include only the columns where the version is greater than or equal to.
+     */
+    public function whereVersionFrom(TimeRange|DateTimeInterface|int $timestamp): self
+    {
+        $timestamp = $timestamp instanceof TimeRange
+            ? $timestamp->getStartTime()
+            : $this->normalizeVersion($timestamp);
+
+        if (! $this->version instanceof TimeRange || $this->version->hasSpecificTime()) {
+            $this->version = new TimeRange;
+        }
+
+        $this->version->setStartTime($timestamp);
+
+        return $this;
+    }
+
+    /**
+     * Include only the columns where the version is before to.
+     */
+    public function whereVersionBefore(TimeRange|DateTimeInterface|int $timestamp): self
+    {
+        $timestamp = $timestamp instanceof TimeRange
+            ? $timestamp->getEndTime()
+            : $this->normalizeVersion($timestamp);
+
+        if (! $this->version instanceof TimeRange || $this->version->hasSpecificTime()) {
+            $this->version = new TimeRange;
+        }
+
+        $this->version->setEndTime($timestamp);
+
+        return $this;
+    }
+
+    /**
+     * Include only the columns where the version is in the range.
+     */
+    public function whereVersionBetween(DateTimeInterface|int $from, DateTimeInterface|int $before): self
+    {
+        return $this->whereVersionFrom($from)->whereVersionBefore($before);
+    }
+
+    /**
      * Limit the maximal value version to retrieve with.
      */
     public function maxVersions(int $max): self
@@ -418,5 +483,15 @@ trait HasConditions
         $this->limit = $limit;
 
         return $this;
+    }
+
+    /**
+     * Normalize column version.
+     */
+    protected function normalizeVersion(DateTimeInterface|int $timestamp): int
+    {
+        return $timestamp instanceof DateTimeInterface
+            ? (int) $timestamp->format('Uv')
+            : $timestamp;
     }
 }

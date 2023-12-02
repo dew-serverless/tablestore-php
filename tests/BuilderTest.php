@@ -5,6 +5,7 @@ use Dew\Tablestore\Builder;
 use Dew\Tablestore\Cells\StringAttribute;
 use Dew\Tablestore\PrimaryKey;
 use Protos\Filter;
+use Protos\TimeRange;
 
 test('where key filters primary keys', function () {
     $builder = new Builder;
@@ -299,6 +300,56 @@ test('select between specifies the column boundaries', function () {
         ->and($builder->selectStop)->toBe('attr3');
 });
 
+test('where version specifies time range specific time', function ($version, $timestamp) {
+    $builder = new Builder;
+    $builder->whereVersion($version);
+    expect($builder->version)->toBeInstanceOf(TimeRange::class)
+        ->and($builder->version->hasSpecificTime())->toBeTrue()
+        ->and($builder->version->hasStartTime())->toBeFalse()
+        ->and($builder->version->hasEndTime())->toBeFalse()
+        ->and($builder->version->getSpecificTime())->toBe($timestamp);
+})->with('versions');
+
+test('where version from specifies time range start time', function ($version, $timestamp) {
+    $builder = new Builder;
+    $builder->whereVersionFrom($version);
+    expect($builder->version)->toBeInstanceOf(TimeRange::class)
+        ->and($builder->version->hasSpecificTime())->toBeFalse()
+        ->and($builder->version->hasStartTime())->toBeTrue()
+        ->and($builder->version->hasEndTime())->toBeFalse()
+        ->and($builder->version->getStartTime())->toBe($timestamp);
+})->with('versions');
+
+test('where version before specifies time range end time', function ($version, $timestamp) {
+    $builder = new Builder;
+    $builder->whereVersionBefore($version);
+    expect($builder->version)->toBeInstanceOf(TimeRange::class)
+        ->and($builder->version->hasSpecificTime())->toBeFalse()
+        ->and($builder->version->hasStartTime())->toBeFalse()
+        ->and($builder->version->hasEndTime())->toBeTrue()
+        ->and($builder->version->getEndTime())->toBe($timestamp);
+})->with('versions');
+
+test('where version between specifies time range', function () {
+    $version1 = (int) (new DateTimeImmutable)->modify('-1 day')->format('Uv');
+    $version2 = (int) (new DateTimeImmutable)->format('Uv');
+    $builder = new Builder;
+    $builder->whereVersionBetween($version1, $version2);
+    expect($builder->version)->toBeInstanceOf(TimeRange::class)
+        ->and($builder->version->hasSpecificTime())->toBeFalse()
+        ->and($builder->version->hasStartTime())->toBeTrue()
+        ->and($builder->version->hasEndTime())->toBeTrue()
+        ->and($builder->version->getStartTime())->toBe($version1)
+        ->and($builder->version->getEndTime())->toBe($version2);
+});
+
+test('where version specific time and range are mutually exclusive', function ($whereMethod) {
+    $builder = new Builder;
+    $builder->whereVersion(1234567891011)->$whereMethod(1234567891011);
+    expect($builder->version)->toBeInstanceOf(TimeRange::class)
+        ->and($builder->version->hasSpecificTime())->toBeFalse();
+})->with(['whereVersionFrom', 'whereVersionBefore']);
+
 dataset('multiple attributes', [
     'name and values' => [[
         ['attr1', 'foo'],
@@ -319,4 +370,22 @@ dataset('super where apis', [
     'orWhere',
     'whereNot',
     'orWhereNot',
+]);
+
+dataset('versions', [
+    'version in timestamp' => [
+        1234567891011,
+        1234567891011,
+    ],
+    'version in datetime instance' => [
+        $now = new DateTimeImmutable,
+        (int) $now->format('Uv'),
+    ],
+    'version in time range instance' => [
+        (new TimeRange)
+            ->setSpecificTime(1234567891011)
+            ->setStartTime(1234567891011)
+            ->setEndTime(1234567891011),
+        1234567891011,
+    ],
 ]);
