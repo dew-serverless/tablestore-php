@@ -62,6 +62,8 @@ trait HasConditions
 
     /**
      * The maximal value version to retrieve with.
+     *
+     * @var positive-int|null
      */
     public ?int $maxVersions = null;
 
@@ -403,6 +405,8 @@ trait HasConditions
 
     /**
      * Limit the maximal value version to retrieve with.
+     *
+     * @param  positive-int  $max
      */
     public function maxVersions(int $max): self
     {
