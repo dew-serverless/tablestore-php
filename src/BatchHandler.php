@@ -71,25 +71,24 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            [$pks, $selects, $takes, $filter, $selectStart, $selectStop]
-                = $this->extractPayloadFromRead($builders);
+            $payload = $this->extractPayloadFromRead($builders);
 
             $request = (new TableInBatchGetRowRequest)
                 ->setTableName($table)
-                ->setPrimaryKey($pks)
-                ->setColumnsToGet($selects)
-                ->setMaxVersions($takes);
+                ->setPrimaryKey($payload['pks'])
+                ->setColumnsToGet($payload['selects'])
+                ->setMaxVersions($payload['versions']);
 
-            if ($filter instanceof Filter) {
-                $request->setFilter($filter->serializeToString());
+            if ($payload['filter'] instanceof Filter) {
+                $request->setFilter($payload['filter']->serializeToString());
             }
 
-            if (is_string($selectStart)) {
-                $request->setStartColumn($selectStart);
+            if (is_string($payload['start'])) {
+                $request->setStartColumn($payload['start']);
             }
 
-            if (is_string($selectStop)) {
-                $request->setEndColumn($selectStop);
+            if (is_string($payload['stop'])) {
+                $request->setEndColumn($payload['stop']);
             }
 
             $tables[] = $request;
@@ -102,7 +101,14 @@ class BatchHandler
      * Extract payload from a list of read builders.
      *
      * @param  \Dew\Tablestore\BatchBuilder[]  $builders
-     * @return array{0: string[], 1: string[], 2: positive-int, 3: \Protos\Filter|null, 4: string|null, 5: string|null}
+     * @return array{
+     *   pks: string[],
+     *   selects: string[],
+     *   versions: positive-int,
+     *   filter: \Protos\Filter|null,
+     *   start: string|null,
+     *   stop: string|null
+     * }
      */
     protected function extractPayloadFromRead(array $builders): array
     {
@@ -113,30 +119,37 @@ class BatchHandler
 
             if (isset($builder->row)) {
                 // pks: combine the buffer in each builder.
-                $carry[0][] = $builder->row->getBuffer();
+                $carry['pks'][] = $builder->row->getBuffer();
             }
 
             // selects: combine the selected columns in each builder.
-            $carry[1] = [...$carry[1], ...$builder->selects];
+            $carry['selects'] = [...$carry['selects'], ...$builder->selects];
 
-            // takes: retrieve the maximal value version from builders.
-            $carry[2] = max($carry[2], $builder->maxVersions);
+            // versions: retrieve the maximal value version from builders.
+            $carry['versions'] = max($carry['versions'], $builder->maxVersions);
 
             // filter: override with the last occurrence of the row filter.
-            $carry[3] = $this->shouldBuildFilter($builder)
+            $carry['filter'] = $this->shouldBuildFilter($builder)
                 ? $this->buildFilter($builder)
-                : $carry[3];
+                : $carry['filter'];
 
             // column selection range: start, stop
             // override with the last occurrence of the selection.
-            $carry[4] = $builder->selectStart ?? $carry[4];
-            $carry[5] = $builder->selectStop ?? $carry[5];
+            $carry['start'] = $builder->selectStart ?? $carry['start'];
+            $carry['stop'] = $builder->selectStop ?? $carry['stop'];
 
             return $carry;
-        }, [[], [], 0, null, null, null]);
+        }, [
+            'pks' => [],
+            'selects' => [],
+            'versions' => 1,
+            'filter' => null,
+            'start' => null,
+            'stop' => null,
+        ]);
 
         // Primary keys are required to retrieve rows from a table.
-        if ($payload[0] === []) {
+        if ($payload['pks'] === []) {
             throw new BatchHandlerException('The statement is incomplete.');
         }
 
