@@ -44,6 +44,9 @@ class ConditionFilter
             $this->withPrecedence($conditions)
         );
 
+        // After reordering the conditions with operator precedence, the data
+        // structure is converted into a list of OR conditions, where each
+        // element consists of a list of AND conditions. No complicated.
         return new ConditionGroup('or', $conditions);
     }
 
