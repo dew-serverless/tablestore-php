@@ -60,7 +60,7 @@ class RowWriter
     /**
      * Encode the row for deletion.
      *
-     * @param  (\Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\PrimaryKey)[]  $pks
+     * @param  \Dew\Tablestore\Cells\Cell[]  $pks
      */
     public function deleteRow(array $pks): self
     {
@@ -178,7 +178,7 @@ class RowWriter
     public function addCellValue(HasValue $cell): self
     {
         $this->buffer->writeChar(Tag::CELL_VALUE);
-
+        $this->buffer->writeLittleEndian32($cell->valueSize());
         $cell->toFormattedValue($this->buffer);
 
         return $this;

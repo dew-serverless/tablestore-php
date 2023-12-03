@@ -35,6 +35,20 @@ trait IsStringCell
     }
 
     /**
+     * The allocated size of the value in buffer.
+     *
+     * formatted_value = value_type value_len value_data
+     * value_type = int8
+     * value_len = int32
+     */
+    public function valueSize(): int
+    {
+        [$typeSize, $lenSize, $dataSize] = [1, 4, strlen($this->value)];
+
+        return $typeSize + $lenSize + $dataSize;
+    }
+
+    /**
      * Get value from the formatted value in buffer.
      */
     public static function fromFormattedValue(PlainbufferReader $buffer): string
@@ -45,7 +59,7 @@ trait IsStringCell
     }
 
     /**
-     * Build formatted value to buffer.
+     * The allocated size in byte for the value in buffer.
      *
      * formatted_value = value_type value_len value_data
      * value_type = int8
@@ -53,10 +67,6 @@ trait IsStringCell
      */
     public function toFormattedValue(PlainbufferWriter $buffer): void
     {
-        [$typeSize, $lenSize, $dataSize] = [1, 4, strlen($this->value)];
-
-        $buffer->writeLittleEndian32($typeSize + $lenSize + $dataSize);
-
         // value_type: 1 byte
         $buffer->writeChar($this->type());
 

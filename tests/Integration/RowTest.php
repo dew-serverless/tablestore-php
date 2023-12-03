@@ -70,7 +70,7 @@ test('data can be retrieved', function () {
 test('data retrieval with maximal versions', function () {
     $response = tablestore()->table('testing_items')->where([
         PrimaryKey::string('key', 'timestamps'),
-    ])->take(2)->get();
+    ])->maxVersions(2)->get();
 
     $row = $response->getDecodedRow();
 
@@ -345,4 +345,26 @@ test('batch read retrieves multiple rows', function () {
         ->and($row2['value'][0]->name())->toBe($attr2->name())
         ->and($row2['value'][0]->type())->toBe($attr2->type())
         ->and($row2['value'][0]->value())->toBe($attr2->value());
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('data retrieval with filter', function () {
+    // prepare the testing data
+    [$pk1, $attr1] = [PrimaryKey::string('key', 'filter-get-1'), Attribute::string('value', 'foo')];
+    [$pk2, $attr2] = [PrimaryKey::string('key', 'filter-get-2'), Attribute::string('value', 'bar')];
+
+    $response = tablestore()->batch(function ($builder) use ($pk1, $attr1, $pk2, $attr2) {
+        $builder->table('testing_items')->insert([$pk1, $attr1]);
+        $builder->table('testing_items')->insert([$pk2, $attr2]);
+    });
+
+    expect($response->getTables()->count())->toBe(1);
+
+    $response = tablestore()->table('testing_items')
+        ->where([$pk1])
+        ->where($attr1->name(), '!=', $attr1->value())
+        ->get();
+
+    expect($response->getConsumed()->getCapacityUnit()->getRead())->toBe(1)
+        ->and($response->getConsumed()->getCapacityUnit()->getWrite())->toBe(0)
+        ->and($response->getDecodedRow())->toBeNull();
 })->skip(! integrationTestEnabled(), 'integration test not enabled');

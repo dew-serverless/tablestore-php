@@ -16,7 +16,7 @@ class BatchBag
      */
     public function table(string $table): BatchBuilder
     {
-        return $this->tables[$table][] = new BatchBuilder($table);
+        return $this->tables[$table][] = (new BatchBuilder)->setTable($table);
     }
 
     /**

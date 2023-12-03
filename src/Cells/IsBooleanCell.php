@@ -35,6 +35,20 @@ trait IsBooleanCell
     }
 
     /**
+     * The allocated size in byte for the value in buffer.
+     *
+     * formatted_value = value_type value_len value_data
+     * value_type = int8
+     * value_len = int32
+     */
+    public function valueSize(): int
+    {
+        [$typeSize, $dataSize] = [1, 1];
+
+        return $typeSize + $dataSize;
+    }
+
+    /**
      * Get value from the formatted value in buffer.
      */
     public static function fromFormattedValue(PlainbufferReader $buffer): bool
@@ -51,10 +65,6 @@ trait IsBooleanCell
      */
     public function toFormattedValue(PlainbufferWriter $buffer): void
     {
-        [$typeSize, $dataSize] = [1, 1];
-
-        $buffer->writeLittleEndian32($typeSize + $dataSize);
-
         // value_type: 1 byte
         $buffer->writeChar($this->type());
 

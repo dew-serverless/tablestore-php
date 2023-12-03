@@ -2,20 +2,23 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Concerns\InteractsWithRequest;
 use Dew\Tablestore\Exceptions\BatchHandlerException;
 use Google\Protobuf\Internal\Message;
 use Protos\BatchGetRowRequest;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowRequest;
 use Protos\BatchWriteRowResponse;
-use Protos\Condition;
-use Protos\ReturnContent;
+use Protos\Filter;
 use Protos\RowInBatchWriteRowRequest;
 use Protos\TableInBatchGetRowRequest;
 use Protos\TableInBatchWriteRowRequest;
+use Protos\TimeRange;
 
 class BatchHandler
 {
+    use InteractsWithRequest;
+
     /**
      * Create a new batch handler.
      */
@@ -69,13 +72,34 @@ class BatchHandler
         $tables = [];
 
         foreach ($bag->getTables() as $table => $builders) {
-            [$pks, $selects, $takes] = $this->extractPayloadFromRead($builders);
+            $payload = $this->extractPayloadFromRead($builders);
 
-            $tables[] = (new TableInBatchGetRowRequest)
+            $request = (new TableInBatchGetRowRequest)
                 ->setTableName($table)
-                ->setPrimaryKey($pks)
-                ->setColumnsToGet($selects)
-                ->setMaxVersions($takes);
+                ->setPrimaryKey($payload['pks'])
+                ->setColumnsToGet($payload['selects']);
+
+            if ($payload['time'] instanceof TimeRange) {
+                $request->setTimeRange($payload['time']);
+            }
+
+            if (is_int($payload['versions'])) {
+                $request->setMaxVersions($payload['versions']);
+            }
+
+            if ($payload['filter'] instanceof Filter) {
+                $request->setFilter($payload['filter']->serializeToString());
+            }
+
+            if (is_string($payload['start'])) {
+                $request->setStartColumn($payload['start']);
+            }
+
+            if (is_string($payload['stop'])) {
+                $request->setEndColumn($payload['stop']);
+            }
+
+            $tables[] = $request;
         }
 
         return $tables;
@@ -85,33 +109,71 @@ class BatchHandler
      * Extract payload from a list of read builders.
      *
      * @param  \Dew\Tablestore\BatchBuilder[]  $builders
-     * @return array{0: string[], 1: string[], 2: positive-int}
+     * @return array{
+     *   pks: string[],
+     *   selects: string[],
+     *   time: \Protos\TimeRange|null,
+     *   versions: positive-int|null,
+     *   filter: \Protos\Filter|null,
+     *   start: string|null,
+     *   stop: string|null
+     * }
      */
     protected function extractPayloadFromRead(array $builders): array
     {
-        // @phpstan-ignore-next-line
-        return array_reduce($builders, function (array $carry, BatchBuilder $builder): array {
-            $buffer = $builder->row?->getBuffer();
-
-            if ($buffer === null) {
-                throw new BatchHandlerException('The statement is incomplete.');
-            }
-
+        $payload = array_reduce($builders, function (array $carry, BatchBuilder $builder): array {
             if ($builder->isWrite()) {
                 throw new BatchHandlerException('Could not mix read and write operations in one batch.');
             }
 
-            // pks: combine the buffer in each builder.
-            $carry[0][] = $buffer;
+            if (isset($builder->row)) {
+                // pks: combine the buffer in each builder.
+                $carry['pks'][] = $builder->row->getBuffer();
+            }
 
             // selects: combine the selected columns in each builder.
-            $carry[1] = [...$carry[1], ...$builder->selects];
+            $carry['selects'] = [...$carry['selects'], ...$builder->selects];
 
-            // takes: retrieve the maximal value version from builders.
-            $carry[2] = max($carry[2], $builder->takes);
+            // time: override with the last occurrence of the time range.
+            $carry['time'] = $builder->version ?? $carry['time'];
+
+            // versions: retrieve the maximal value version from builders.
+            $carry['versions'] = is_int($builder->maxVersions)
+                ? max($carry['versions'] ?? 0, $builder->maxVersions)
+                : $carry['versions'];
+
+            // filter: override with the last occurrence of the row filter.
+            $carry['filter'] = $this->shouldBuildFilter($builder)
+                ? $this->buildFilter($builder)
+                : $carry['filter'];
+
+            // column selection range: start, stop
+            // override with the last occurrence of the selection.
+            $carry['start'] = $builder->selectStart ?? $carry['start'];
+            $carry['stop'] = $builder->selectStop ?? $carry['stop'];
 
             return $carry;
-        }, [[], [], 0]);
+        }, [
+            'pks' => [],
+            'selects' => [],
+            'time' => null,
+            'versions' => null,
+            'filter' => null,
+            'start' => null,
+            'stop' => null,
+        ]);
+
+        // Primary keys are required to retrieve rows from a table.
+        if ($payload['pks'] === []) {
+            throw new BatchHandlerException('The statement is incomplete.');
+        }
+
+        // Requires at least one of the time range and max versions.
+        if ($payload['time'] === null && $payload['versions'] === null) {
+            $payload['versions'] = 1;
+        }
+
+        return $payload;
     }
 
     /**
@@ -151,28 +213,21 @@ class BatchHandler
      */
     protected function toChangesRequest(BatchBuilder $builder): RowInBatchWriteRowRequest
     {
-        $buffer = $builder->row?->getBuffer();
-
-        if ($buffer === null) {
+        if (! isset($builder->row)) {
             throw new BatchHandlerException('The statement is incomplete.');
         }
+
+        $buffer = $builder->row->getBuffer();
 
         if ($builder->isRead()) {
             throw new BatchHandlerException('Could not mix read and write operations in one batch.');
         }
 
-        $condition = new Condition;
-        $condition->setRowExistence($builder->expectation);
-
-        $content = new ReturnContent;
-        $content->setReturnType($builder->returned);
-        $content->setReturnColumnNames($builder->selects);
-
         return (new RowInBatchWriteRowRequest)
             ->setType($builder->operation ?? throw new BatchHandlerException('The statement is incomplete.'))
             ->setRowChange($buffer)
-            ->setCondition($condition)
-            ->setReturnContent($content);
+            ->setCondition($this->toCondition($builder))
+            ->setReturnContent($this->toReturnContent($builder));
     }
 
     /**
