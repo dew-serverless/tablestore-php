@@ -39,15 +39,13 @@ class ConditionFilter
      */
     protected function buildRoot(array $conditions): ConditionGroup
     {
-        $conditions = array_map(
-            fn ($conditions): ConditionGroup => $this->buildGroup('and', $conditions),
-            $this->withPrecedence($conditions)
-        );
-
         // After reordering the conditions with operator precedence, the data
         // structure is converted into a list of OR conditions, where each
         // element consists of a list of AND conditions. No complicated.
-        return new ConditionGroup('or', $conditions);
+        return new ConditionGroup('or', array_map(
+            fn ($conditions): ConditionGroup => $this->buildGroup('and', $conditions),
+            $this->withPrecedence($conditions)
+        ));
     }
 
     /**
