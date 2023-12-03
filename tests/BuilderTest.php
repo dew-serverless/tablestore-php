@@ -3,6 +3,7 @@
 use Dew\Tablestore\Attribute;
 use Dew\Tablestore\Builder;
 use Dew\Tablestore\Cells\StringAttribute;
+use Dew\Tablestore\Cells\StringPrimaryKey;
 use Dew\Tablestore\PrimaryKey;
 use Protos\Filter;
 use Protos\TimeRange;
@@ -17,6 +18,21 @@ test('where key accepts multiple keys', function () {
     $builder = new Builder;
     $builder->whereKey([$key1 = PrimaryKey::string('key1', 'foo'), $key2 = PrimaryKey::string('key2', 'bar')]);
     expect($builder->whereKeys)->toBe([$key1, $key2]);
+});
+
+test('where key builds primary key', function () {
+    $builder = new Builder;
+    $builder->whereKey('key', 'foo');
+    expect($builder->whereKeys)->toHaveCount(1)
+        ->and($builder->whereKeys[0])->toBeInstanceOf(StringPrimaryKey::class);
+});
+
+test('where key builds multiple keys', function () {
+    $builder = new Builder;
+    $builder->whereKey(['key1' => 'foo', 'key2' => 'bar']);
+    expect($builder->whereKeys)->toHaveCount(2)
+        ->and($builder->whereKeys[0])->toBeInstanceOf(StringPrimaryKey::class)
+        ->and($builder->whereKeys[1])->toBeInstanceOf(StringPrimaryKey::class);
 });
 
 test('where column constructs condition', function () {

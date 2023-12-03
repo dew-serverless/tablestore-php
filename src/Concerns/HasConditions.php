@@ -6,7 +6,8 @@ use DateTimeInterface;
 use Dew\Tablestore\Attribute;
 use Dew\Tablestore\Builder;
 use Dew\Tablestore\Cells\Cell;
-use Dew\Tablestore\Contracts\PrimaryKey;
+use Dew\Tablestore\Contracts\PrimaryKey as PrimaryKeyContract;
+use Dew\Tablestore\PrimaryKey;
 use Protos\Filter;
 use Protos\ReturnType;
 use Protos\RowExistenceExpectation;
@@ -139,7 +140,7 @@ trait HasConditions
     public function where(Filter|Cell|callable|array|string $name, mixed $operator = null, mixed $value = null): self
     {
         if (is_array($name) && $name !== []) {
-            return $name[0] instanceof PrimaryKey ? $this->whereKey($name) : $this->whereColumn($name);
+            return $name[0] instanceof PrimaryKeyContract ? $this->whereKey($name) : $this->whereColumn($name);
         }
 
         if (is_callable($name) || is_string($name)) {
@@ -147,7 +148,7 @@ trait HasConditions
         }
 
         if ($name instanceof Cell) {
-            return $name instanceof PrimaryKey ? $this->whereKey($name) : $this->whereColumn($name);
+            return $name instanceof PrimaryKeyContract ? $this->whereKey($name) : $this->whereColumn($name);
         }
 
         if ($name instanceof Filter) {
@@ -190,11 +191,37 @@ trait HasConditions
     /**
      * Filter rows with the given primary keys.
      *
-     * @param  \Dew\Tablestore\Cells\Cell[]|\Dew\Tablestore\Cells\Cell  $primaryKeys
+     * @param  \Dew\Tablestore\Cells\Cell|(\Dew\Tablestore\Cells\Cell|mixed)[]|string  $name
      */
-    public function whereKey(array|Cell $primaryKeys): self
+    public function whereKey(Cell|array|string $name, mixed $value = null): self
     {
-        $this->whereKeys = is_array($primaryKeys) ? $primaryKeys : [$primaryKeys];
+        if (is_array($name)) {
+            return $this->whereKeys($name);
+        }
+
+        $this->whereKeys = is_string($name)
+            ? [PrimaryKey::createFromValue($name, $value)]
+            : [$name];
+
+        return $this;
+    }
+
+    /**
+     * Filter rows with a list of primary keys.
+     *
+     * @param  \Dew\Tablestore\Cells\Cell[]|mixed[]  $keys
+     */
+    protected function whereKeys(array $keys): self
+    {
+        $result = [];
+
+        foreach ($keys as $name => $value) {
+            $result[] = $value instanceof Cell
+                ? $value
+                : PrimaryKey::createFromValue($name, $value);
+        }
+
+        $this->whereKeys = $result;
 
         return $this;
     }
