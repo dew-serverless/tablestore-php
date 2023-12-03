@@ -3,6 +3,12 @@
 use Dew\Tablestore\Attribute;
 use Dew\Tablestore\ConditionFilter;
 
+test('empty condition', function () {
+    $builder = new ConditionFilter([]);
+    expect(fn () => $builder->toFilter())
+        ->toThrow(InvalidArgumentException::class, 'Could not build a filter with an empty group.');
+});
+
 test('single condition', function () {
     // expression: attr1 = 'foo'
     $builder = new ConditionFilter([['comparison' => '=', 'column' => Attribute::string('attr1', 'foo'), 'logical' => 'and']]);
