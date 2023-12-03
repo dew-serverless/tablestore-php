@@ -3,6 +3,7 @@
 namespace Dew\Tablestore;
 
 use Dew\Tablestore\Cells\BinaryPrimaryKey;
+use Dew\Tablestore\Cells\Cell;
 use Dew\Tablestore\Cells\IntegerPrimaryKey;
 use Dew\Tablestore\Cells\StringPrimaryKey;
 use Dew\Tablestore\Cells\ValueType;
@@ -32,6 +33,22 @@ class PrimaryKey
     public static function binary(string $key, string $value): BinaryPrimaryKey
     {
         return new BinaryPrimaryKey($key, $value);
+    }
+
+    /**
+     * Create a primary key based on the type of the given value.
+     *
+     * @return \Dew\Tablestore\Cells\Cell&\Dew\Tablestore\Contracts\HasValue&\Dew\Tablestore\Contracts\PrimaryKey
+     */
+    public static function createFromValue(string $name, mixed $value): Cell
+    {
+        return match (gettype($value)) {
+            'integer' => static::integer($name, $value),
+            'string' => static::string($name, $value),
+            default => throw new \InvalidArgumentException(sprintf(
+                'Could not build a primary key from the [%s] type.', gettype($value)
+            )),
+        };
     }
 
     /**
