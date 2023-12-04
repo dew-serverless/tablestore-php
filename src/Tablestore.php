@@ -20,15 +20,20 @@ class Tablestore
     protected BuildsSignature $signature;
 
     /**
+     * The instance name.
+     */
+    protected string $instance;
+
+    /**
      * Create a Tablestore.
      */
     public function __construct(
         protected string $accessKeyId,
         protected string $accessKeySecret,
         protected string $endpoint,
-        protected string $instance
+        string $instance = null
     ) {
-        //
+        $this->instance = $instance ?? GuessInstanceName::make($endpoint);
     }
 
     /**
