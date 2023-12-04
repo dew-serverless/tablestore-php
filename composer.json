@@ -1,6 +1,13 @@
 {
     "name": "dew-serverless/tablestore-php",
     "type": "library",
+    "keywords": [
+        "tablestore",
+        "ots",
+        "alibabacloud",
+        "aliyun",
+        "acs"
+    ],
     "license": "MIT",
     "authors": [
         {
