@@ -2,12 +2,17 @@
 
 use Dew\Tablestore\Attribute;
 use Dew\Tablestore\Builder;
+use Dew\Tablestore\Exceptions\TablestoreException;
 use Dew\Tablestore\Handler;
 use Dew\Tablestore\PrimaryKey;
 use Dew\Tablestore\Tablestore;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\ServerException;
 use GuzzleHttp\Psr7\Response;
+use Protos\Error;
 use Protos\Filter;
 use Protos\FilterType;
+use Psr\Http\Message\RequestInterface;
 
 test('filter build determination primary keys', function () {
     $handler = new Handler(Mockery::mock(Tablestore::class));
@@ -168,4 +173,30 @@ test('get row sends with time range and max versions', function () {
         ->whereVersion(1234567891011)
         ->maxVersions(2)
         ->get();
+});
+
+test('handles http client error', function () {
+    $error = (new Error)->setCode('foo')->setMessage('bar');
+    $exception = new ClientException('',
+        Mockery::mock(RequestInterface::class),
+        new Response(body: $error->serializeToString())
+    );
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()->send(Mockery::any(), Mockery::any())->andThrows($exception);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    expect(fn () => $builder->get())->toThrow(TablestoreException::class, 'bar');
+});
+
+test('handles http server error', function () {
+    $error = (new Error)->setCode('foo')->setMessage('bar');
+    $exception = new ServerException('',
+        Mockery::mock(RequestInterface::class),
+        new Response(body: $error->serializeToString())
+    );
+    $mockedTs = Mockery::mock(Tablestore::class);
+    $mockedTs->expects()->send(Mockery::any(), Mockery::any())->andThrows($exception);
+    $handler = new Handler($mockedTs);
+    $builder = (new Builder)->setTable('test')->handlerUsing($handler);
+    expect(fn () => $builder->get())->toThrow(TablestoreException::class, 'bar');
 });

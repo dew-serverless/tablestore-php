@@ -5,7 +5,11 @@ namespace Dew\Tablestore\Concerns;
 use Dew\Tablestore\BatchBuilder;
 use Dew\Tablestore\Builder;
 use Dew\Tablestore\ConditionFilter;
+use Dew\Tablestore\Exceptions\TablestoreException;
 use Dew\Tablestore\PaginationFilter;
+use Dew\Tablestore\Tablestore;
+use Google\Protobuf\Internal\Message;
+use GuzzleHttp\Exception\BadResponseException;
 use Protos\Condition;
 use Protos\Filter;
 use Protos\ReturnContent;
@@ -13,6 +17,25 @@ use RuntimeException;
 
 trait InteractsWithRequest
 {
+    /**
+     * The Tablestore client.
+     */
+    protected Tablestore $tablestore;
+
+    /**
+     * Communicate with Tablestore with the given message.
+     */
+    protected function send(string $endpoint, Message $message): string
+    {
+        try {
+            return $this->tablestore()->send($endpoint, $message)
+                ->getBody()
+                ->getContents();
+        } catch (BadResponseException $e) {
+            throw TablestoreException::fromResponse($e->getResponse());
+        }
+    }
+
     /**
      * Build a condition Protobuf message.
      */
@@ -75,5 +98,13 @@ trait InteractsWithRequest
         }
 
         throw new RuntimeException('Missing filter data to build with.');
+    }
+
+    /**
+     * The Tablestore client.
+     */
+    public function tablestore(): Tablestore
+    {
+        return $this->tablestore;
     }
 }

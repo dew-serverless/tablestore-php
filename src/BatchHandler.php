@@ -4,7 +4,6 @@ namespace Dew\Tablestore;
 
 use Dew\Tablestore\Concerns\InteractsWithRequest;
 use Dew\Tablestore\Exceptions\BatchHandlerException;
-use Google\Protobuf\Internal\Message;
 use Protos\BatchGetRowRequest;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowRequest;
@@ -228,15 +227,5 @@ class BatchHandler
             ->setRowChange($buffer)
             ->setCondition($this->toCondition($builder))
             ->setReturnContent($this->toReturnContent($builder));
-    }
-
-    /**
-     * Communicate with Tablestore with the given message.
-     */
-    protected function send(string $endpoint, Message $message): string
-    {
-        return $this->tablestore->send($endpoint, $message)
-            ->getBody()
-            ->getContents();
     }
 }
