@@ -4,7 +4,6 @@ namespace Dew\Tablestore;
 
 use Dew\Tablestore\Concerns\InteractsWithRequest;
 use Dew\Tablestore\Responses\RowDecodableResponse;
-use Google\Protobuf\Internal\Message;
 use Protos\DeleteRowRequest;
 use Protos\DeleteRowResponse;
 use Protos\GetRowRequest;
@@ -120,23 +119,5 @@ class Handler
         $response->mergeFromString($this->send('/GetRow', $request));
 
         return new RowDecodableResponse($response);
-    }
-
-    /**
-     * Communicate with Tablestore with the given message.
-     */
-    protected function send(string $endpoint, Message $message): string
-    {
-        return $this->tablestore->send($endpoint, $message)
-            ->getBody()
-            ->getContents();
-    }
-
-    /**
-     * The tablestore client.
-     */
-    public function tablestore(): Tablestore
-    {
-        return $this->tablestore;
     }
 }
