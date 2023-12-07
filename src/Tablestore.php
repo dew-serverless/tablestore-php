@@ -25,6 +25,11 @@ class Tablestore
     protected string $instance;
 
     /**
+     * The STS token for the access key.
+     */
+    protected string $token;
+
+    /**
      * Create a Tablestore.
      */
     public function __construct(
@@ -66,6 +71,24 @@ class Tablestore
     public function instanceName(): string
     {
         return $this->instance;
+    }
+
+    /**
+     * The STS token for the access key.
+     */
+    public function token(): ?string
+    {
+        return $this->token ?? null;
+    }
+
+    /**
+     * Configure STS token for the access key.
+     */
+    public function tokenUsing(string $token): self
+    {
+        $this->token = $token;
+
+        return $this;
     }
 
     /**

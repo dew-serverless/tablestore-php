@@ -15,14 +15,21 @@ class ConfigureMetadata
      */
     public static function make(Tablestore $tablestore): callable
     {
-        return Middleware::mapRequest(fn (RequestInterface $request): RequestInterface => $request
-            ->withHeader('x-ots-accesskeyid', $tablestore->accessKeyId())
-            ->withHeader('x-ots-apiversion', '2015-12-31')
-            ->withHeader('x-ots-contentmd5', base64_encode(
-                md5($request->getBody()->getContents(), binary: true)
-            ))
-            ->withHeader('x-ots-date', gmdate('Y-m-d\\TH:i:s.v\\Z'))
-            ->withHeader('x-ots-instancename', $tablestore->instanceName())
-        );
+        return Middleware::mapRequest(function (RequestInterface $request) use ($tablestore): RequestInterface {
+            $request = $request
+                ->withHeader('x-ots-accesskeyid', $tablestore->accessKeyId())
+                ->withHeader('x-ots-apiversion', '2015-12-31')
+                ->withHeader('x-ots-contentmd5', base64_encode(
+                    md5($request->getBody()->getContents(), binary: true)
+                ))
+                ->withHeader('x-ots-date', gmdate('Y-m-d\\TH:i:s.v\\Z'))
+                ->withHeader('x-ots-instancename', $tablestore->instanceName());
+
+            if (is_string($tablestore->token())) {
+                return $request->withHeader('x-ots-ststoken', $tablestore->token());
+            }
+
+            return $request;
+        });
     }
 }
