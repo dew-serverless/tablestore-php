@@ -95,10 +95,18 @@ function integrationTestEnabled(): bool
  */
 function tablestore(): Tablestore
 {
-    return new Tablestore(
+    $tablestore = new Tablestore(
         getenv('ACS_ACCESS_KEY_ID'), getenv('ACS_ACCESS_KEY_SECRET'),
         getenv('TS_ENDPOINT'), getenv('TS_INSTNACE')
     );
+
+    $token = getenv('ACS_STS_TOKEN');
+
+    if (is_string($token) && $token !== '') {
+        $tablestore->tokenUsing($token);
+    }
+
+    return $tablestore;
 }
 
 /**
