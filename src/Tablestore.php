@@ -30,6 +30,13 @@ class Tablestore
     protected string $token;
 
     /**
+     * The HTTP request options.
+     *
+     * @var array<string, mixed>
+     */
+    protected array $options = [];
+
+    /**
      * Create a Tablestore.
      */
     public function __construct(
@@ -123,8 +130,8 @@ class Tablestore
         $handler->push(SignRequest::make($this->signature()));
 
         $client = new Client([
-            'base_uri' => $this->endpoint,
-            'handler' => $handler,
+            ...$this->options(),
+            ...['base_uri' => $this->endpoint, 'handler' => $handler],
         ]);
 
         return $client->post($endpoint, ['body' => $message->serializeToString()]);
@@ -144,6 +151,32 @@ class Tablestore
     public function signatureUsing(BuildsSignature $signature): self
     {
         $this->signature = $signature;
+
+        return $this;
+    }
+
+    /**
+     * The HTTP request options.
+     *
+     * @return array<string, mixed>
+     */
+    public function options(): array
+    {
+        $default = [
+            'timeout' => 2.0,
+        ];
+
+        return [...$default, ...$this->options];
+    }
+
+    /**
+     * Configure HTTP request options.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function optionsUsing(array $options): self
+    {
+        $this->options = $options;
 
         return $this;
     }
