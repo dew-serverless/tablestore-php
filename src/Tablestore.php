@@ -129,10 +129,10 @@ class Tablestore
         $handler->push(ConfigureMetadata::make($this));
         $handler->push(SignRequest::make($this->signature()));
 
-        $client = new Client([
-            ...$this->options(),
-            ...['base_uri' => $this->endpoint, 'handler' => $handler],
-        ]);
+        $client = new Client(array_merge($this->options(), [
+            'base_uri' => $this->endpoint,
+            'handler' => $handler,
+        ]));
 
         return $client->post($endpoint, ['body' => $message->serializeToString()]);
     }
@@ -166,7 +166,7 @@ class Tablestore
             'timeout' => 2.0,
         ];
 
-        return [...$default, ...$this->options];
+        return array_merge($default, $this->options);
     }
 
     /**
