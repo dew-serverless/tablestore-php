@@ -1,0 +1,116 @@
+syntax = "proto2";
+
+option php_namespace = "Protos";
+option php_metadata_namespace = "Protos\\Metadata";
+
+package acs.tablestore.table;
+
+import "tablestore.proto";
+
+// ---------------------------------------------------------------------------
+// Create Table
+// ---------------------------------------------------------------------------
+
+message CreateTableRequest {
+  required TableMeta table_meta = 1;
+  required ReservedThroughput reserved_throughput = 2;
+  optional TableOptions table_options = 3;
+  repeated PartitionRange partitions = 4;
+  optional StreamSpecification stream_spec = 5;
+  optional SSESpecification sse_spec = 6;
+  repeated IndexMeta index_metas = 7;
+  optional bool enable_local_txn = 8;
+}
+
+message CreateTableResponse {
+  // empty
+}
+
+// ---------------------------------------------------------------------------
+// Support
+// ---------------------------------------------------------------------------
+
+message TableMeta {
+  required string table_name = 1;
+  repeated PrimaryKeySchema primary_key = 2;
+  repeated DefinedColumnSchema defined_column = 3;
+}
+
+message PrimaryKeySchema {
+  required string name = 1;
+  required PrimaryKeyType type = 2;
+  optional PrimaryKeyOption option = 3;
+}
+
+enum PrimaryKeyType {
+  INTEGER = 1;
+  STRING = 2;
+  BINARY = 3;
+}
+
+enum PrimaryKeyOption {
+  AUTO_INCREMENT = 1;
+}
+
+message DefinedColumnSchema {
+  required string name = 1;
+  required DefinedColumnType type = 2;
+}
+
+enum DefinedColumnType {
+  DCT_INTEGER = 1;
+  DCT_DOUBLE = 2;
+  DCT_BOOLEAN = 3;
+  DCT_STRING = 4;
+  DCT_BLOB = 7;
+}
+
+message ReservedThroughput { required CapacityUnit capacity_unit = 1; }
+
+message TableOptions {
+  optional int32 time_to_live = 1;
+  optional int32 max_versions = 2;
+  optional int64 deviation_cell_version_in_sec = 5;
+  optional bool allow_update = 6;
+}
+
+message PartitionRange {
+  required bytes begin = 1;
+  required bytes end = 2;
+}
+
+message StreamSpecification {
+  required bool enable_stream = 1;
+  optional int32 expiration_time = 2;
+  repeated string columns_to_get = 3;
+}
+
+message SSESpecification {
+  required bool enable = 1;
+  optional SSEKeyType key_type = 2;
+  optional bytes key_id = 3;   // use when key_type is SSE_BYOK
+  optional bytes role_arn = 4; // use when key_type is SSE_BYOK
+}
+
+enum SSEKeyType {
+  SSE_KMS_SERVICE = 1;
+  SSE_BYOK = 2;
+}
+
+message IndexMeta {
+  required string name = 1;
+  repeated string primary_key = 2;
+  repeated string defined_column = 3;
+  required IndexUpdateMode index_update_mode = 4;
+  required IndexType index_type = 5;
+}
+
+enum IndexUpdateMode {
+  IUM_ASYNC_INDEX = 0;
+  IUM_SYNC_INDEX = 1;
+}
+
+enum IndexType {
+  IT_GLOBAL_INDEX = 0;
+  IT_LOCAL_INDEX = 1;
+}
