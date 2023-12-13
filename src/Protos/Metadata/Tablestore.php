@@ -16,11 +16,14 @@ class Tablestore
         }
         $pool->internalAddGeneratedFile(
             '
-g
+”
 tablestore.protoacs.tablestore"&
 Error
 code (	
-message (	BÊProtosâProtos\\Metadata'
+message (	"+
+CapacityUnit
+read (
+write (BÊProtosâProtos\\Metadata'
         , true);
 
         static::$is_initialized = true;

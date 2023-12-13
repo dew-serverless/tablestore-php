@@ -5,6 +5,8 @@ option php_metadata_namespace = "Protos\\Metadata";
 
 package acs.tablestore.row;
 
+import "tablestore.proto";
+
 message TimeRange {
   optional int64 start_time = 1;
   optional int64 end_time = 2;
@@ -35,9 +37,4 @@ enum ReturnType {
 
 message ConsumedCapacity {
   required CapacityUnit capacity_unit = 1;
-}
-
-message CapacityUnit {
-  optional int32 read = 1;
-  optional int32 write = 2;
 }

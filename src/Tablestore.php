@@ -5,11 +5,14 @@ namespace Dew\Tablestore;
 use Dew\Tablestore\Contracts\BuildsSignature;
 use Dew\Tablestore\Middlewares\ConfigureMetadata;
 use Dew\Tablestore\Middlewares\SignRequest;
+use Dew\Tablestore\Schema\Blueprint;
+use Dew\Tablestore\Schema\SchemaHandler;
 use Google\Protobuf\Internal\Message;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowResponse;
+use Protos\CreateTableResponse;
 use Psr\Http\Message\ResponseInterface;
 
 class Tablestore
@@ -96,6 +99,18 @@ class Tablestore
         $this->token = $token;
 
         return $this;
+    }
+
+    /**
+     * Create a new table.
+     *
+     * @param  callable(\Dew\Tablestore\Schema\Blueprint): void  $callback
+     */
+    public function createTable(string $table, callable $callback): CreateTableResponse
+    {
+        $callback($blueprint = new Blueprint);
+
+        return (new SchemaHandler($this))->createTable($table, $blueprint);
     }
 
     /**
