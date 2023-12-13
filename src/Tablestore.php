@@ -13,6 +13,7 @@ use GuzzleHttp\HandlerStack;
 use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowResponse;
 use Protos\CreateTableResponse;
+use Protos\DeleteTableResponse;
 use Psr\Http\Message\ResponseInterface;
 
 class Tablestore
@@ -111,6 +112,14 @@ class Tablestore
         $callback($blueprint = new Blueprint);
 
         return (new SchemaHandler($this))->createTable($table, $blueprint);
+    }
+
+    /**
+     * Delete the existing table.
+     */
+    public function deleteTable(string $table): DeleteTableResponse
+    {
+        return (new SchemaHandler($this))->deleteTable($table);
     }
 
     /**
