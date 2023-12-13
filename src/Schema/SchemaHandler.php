@@ -9,6 +9,8 @@ use Protos\CapacityUnit;
 use Protos\CreateTableRequest;
 use Protos\CreateTableResponse;
 use Protos\DefinedColumnSchema;
+use Protos\DeleteTableRequest;
+use Protos\DeleteTableResponse;
 use Protos\PrimaryKeySchema;
 use Protos\ReservedThroughput;
 use Protos\SSESpecification;
@@ -44,6 +46,19 @@ class SchemaHandler
 
         $response = new CreateTableResponse;
         $response->mergeFromString($this->send('/CreateTable', $request));
+
+        return $response;
+    }
+
+    /**
+     * Delete the existing table.
+     */
+    public function deleteTable(string $name): DeleteTableResponse
+    {
+        $request = (new DeleteTableRequest)->setTableName($name);
+
+        $response = new DeleteTableResponse;
+        $response->mergeFromString($this->send('/DeleteTable', $request));
 
         return $response;
     }
