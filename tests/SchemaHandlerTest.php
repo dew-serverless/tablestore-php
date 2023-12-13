@@ -9,9 +9,9 @@ use Protos\PrimaryKeyType;
 
 test('primary key definition', function () {
     $table = new Blueprint;
-    $table->integer('pk1')->primaryKey();
-    $table->string('pk2')->primaryKey();
-    $table->binary('pk3')->primaryKey();
+    $table->integer('pk1')->primary();
+    $table->string('pk2')->primary();
+    $table->binary('pk3')->primary();
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     $pks = $handler->toTableMeta($table)->getPrimaryKey();
     expect($pks->count())->toBe(3)

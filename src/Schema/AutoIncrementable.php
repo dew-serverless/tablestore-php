@@ -41,7 +41,7 @@ class AutoIncrementable implements Schema
         $this->autoIncrementing = $autoIncrementing;
 
         if ($autoIncrementing) {
-            $this->schema->primaryKey();
+            $this->schema->primary();
         }
 
         return $this;

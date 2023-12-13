@@ -11,7 +11,7 @@ class Keyable implements Schema
     /**
      * Determine if the column is a primary key.
      */
-    public bool $isPrimaryKey = false;
+    public bool $isPrimary = false;
 
     /**
      * Create a primary keyable column instance.
@@ -26,9 +26,9 @@ class Keyable implements Schema
     /**
      * Indicate the column is a primary key.
      */
-    public function primaryKey(): self
+    public function primary(): self
     {
-        $this->isPrimaryKey = true;
+        $this->isPrimary = true;
 
         return $this;
     }
@@ -38,7 +38,7 @@ class Keyable implements Schema
      */
     public function toSchema(): PrimaryKeySchema|DefinedColumnSchema
     {
-        if ($this->isPrimaryKey) {
+        if ($this->isPrimary) {
             return (new PrimaryKeySchema)
                 ->setName($this->column->name)
                 ->setType($this->type);
