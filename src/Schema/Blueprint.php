@@ -102,10 +102,9 @@ class Blueprint
      */
     public function reserveRead(int $capacityUnit): self
     {
-        $cu = $this->throughput?->getCapacityUnit() ?? new CapacityUnit;
-        $cu->setRead($capacityUnit);
-
-        $this->throughput = (new ReservedThroughput)->setCapacityUnit($cu);
+        $this->throughput = (new ReservedThroughput)->setCapacityUnit(
+            $this->throughputCu()->setRead($capacityUnit)
+        );
 
         return $this;
     }
@@ -117,10 +116,9 @@ class Blueprint
      */
     public function reserveWrite(int $capacityUnit): self
     {
-        $cu = $this->throughput?->getCapacityUnit() ?? new CapacityUnit;
-        $cu->setWrite($capacityUnit);
-
-        $this->throughput = (new ReservedThroughput)->setCapacityUnit($cu);
+        $this->throughput = (new ReservedThroughput)->setCapacityUnit(
+            $this->throughputCu()->setWrite($capacityUnit)
+        );
 
         return $this;
     }
@@ -211,6 +209,14 @@ class Blueprint
         $this->encryption = null;
 
         return $this;
+    }
+
+    /**
+     * Get the current throughput reservations or create a new one.
+     */
+    protected function throughputCu(): CapacityUnit
+    {
+        return $this->throughput?->getCapacityUnit() ?? new CapacityUnit;
     }
 
     /**
