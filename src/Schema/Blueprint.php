@@ -2,10 +2,13 @@
 
 namespace Dew\Tablestore\Schema;
 
+use Protos\CapacityUnit;
 use Protos\DefinedColumnType;
 use Protos\PrimaryKeyType;
+use Protos\ReservedThroughput;
 use Protos\SSEKeyType;
 use Protos\SSESpecification;
+use Protos\TableOptions;
 
 class Blueprint
 {
@@ -17,38 +20,14 @@ class Blueprint
     public array $columns = [];
 
     /**
-     * The throughput reservations for reading in capacity unit.
-     *
-     * @var non-negative-int|null
+     * The throughput reservations.
      */
-    public ?int $reservedRead = null;
+    public ?ReservedThroughput $throughput = null;
 
     /**
-     * The throughput reservations for writing in capacity unit.
-     *
-     * @var non-negative-int|null
+     * The table options.
      */
-    public ?int $reservedWrite = null;
-
-    /**
-     * The number of seconds that data can exist.
-     */
-    public ?int $ttl = null;
-
-    /**
-     * The maximum versions to persist.
-     */
-    public ?int $maxVersions = null;
-
-    /**
-     * The version offset limit.
-     */
-    public ?int $versionOffset = null;
-
-    /**
-     * Determine if the existing row can be updated.
-     */
-    public ?bool $allowsUpdate = null;
+    public ?TableOptions $options = null;
 
     /**
      * Determine if the data should be encrypted.
@@ -123,7 +102,9 @@ class Blueprint
      */
     public function reserveRead(int $capacityUnit): self
     {
-        $this->reservedRead = $capacityUnit;
+        $this->throughput = (new ReservedThroughput)->setCapacityUnit(
+            $this->throughputCu()->setRead($capacityUnit)
+        );
 
         return $this;
     }
@@ -135,7 +116,9 @@ class Blueprint
      */
     public function reserveWrite(int $capacityUnit): self
     {
-        $this->reservedWrite = $capacityUnit;
+        $this->throughput = (new ReservedThroughput)->setCapacityUnit(
+            $this->throughputCu()->setWrite($capacityUnit)
+        );
 
         return $this;
     }
@@ -145,7 +128,7 @@ class Blueprint
      */
     public function ttl(int $seconds): self
     {
-        $this->ttl = $seconds;
+        $this->options = $this->options()->setTimeToLive($seconds);
 
         return $this;
     }
@@ -163,7 +146,7 @@ class Blueprint
      */
     public function maxVersions(int $versions): self
     {
-        $this->maxVersions = $versions;
+        $this->options = $this->options()->setMaxVersions($versions);
 
         return $this;
     }
@@ -173,7 +156,8 @@ class Blueprint
      */
     public function versionOffsetIn(int $seconds): self
     {
-        $this->versionOffset = $seconds;
+        $this->options = $this->options()
+            ->setDeviationCellVersionInSec($seconds);
 
         return $this;
     }
@@ -183,7 +167,7 @@ class Blueprint
      */
     public function allowUpdate(bool $allows = true): self
     {
-        $this->allowsUpdate = $allows;
+        $this->options = $this->options()->setAllowUpdate($allows);
 
         return $this;
     }
@@ -225,5 +209,21 @@ class Blueprint
         $this->encryption = null;
 
         return $this;
+    }
+
+    /**
+     * Get the current throughput reservations or create a new one.
+     */
+    protected function throughputCu(): CapacityUnit
+    {
+        return $this->throughput?->getCapacityUnit() ?? new CapacityUnit;
+    }
+
+    /**
+     * Get the current table options or create a new one.
+     */
+    protected function options(): TableOptions
+    {
+        return $this->options ?? new TableOptions;
     }
 }

@@ -5,7 +5,6 @@ namespace Dew\Tablestore\Schema;
 use Dew\Tablestore\Concerns\InteractsWithRequest;
 use Dew\Tablestore\Tablestore;
 use InvalidArgumentException;
-use Protos\CapacityUnit;
 use Protos\CreateTableRequest;
 use Protos\CreateTableResponse;
 use Protos\DefinedColumnSchema;
@@ -67,8 +66,14 @@ class SchemaHandler
     {
         $request = new CreateTableRequest;
         $request->setTableMeta($this->toTableMeta($table)->setTableName($name));
-        $request->setReservedThroughput($this->toReservedThroughput($table));
-        $request->setTableOptions($this->toTableOptions($table));
+
+        if ($table->throughput instanceof ReservedThroughput) {
+            $request->setReservedThroughput($table->throughput);
+        }
+
+        if ($table->options instanceof TableOptions) {
+            $request->setTableOptions($table->options);
+        }
 
         if ($table->encryption instanceof SSESpecification) {
             $request->setSseSpec($table->encryption);
@@ -87,12 +92,12 @@ class SchemaHandler
     {
         $request = (new UpdateTableRequest)->setTableName($name);
 
-        if ($this->hasReservedThroughputUpdate($table)) {
-            $request->setReservedThroughput($this->toReservedThroughput($table));
+        if ($table->throughput instanceof ReservedThroughput) {
+            $request->setReservedThroughput($table->throughput);
         }
 
-        if ($this->hasTableOptionsUpdate($table)) {
-            $request->setTableOptions($this->toTableOptions($table));
+        if ($table->options instanceof TableOptions) {
+            $request->setTableOptions($table->options);
         }
 
         $response = new UpdateTableResponse;
@@ -136,68 +141,5 @@ class SchemaHandler
         return (new TableMeta)
             ->setPrimaryKey($pks)
             ->setDefinedColumn($cols);
-    }
-
-    /**
-     * Create a throughput reservations Protobuf message.
-     */
-    public function toReservedThroughput(Blueprint $table): ReservedThroughput
-    {
-        $cu = new CapacityUnit;
-
-        if (is_int($table->reservedRead)) {
-            $cu->setRead($table->reservedRead);
-        }
-
-        if (is_int($table->reservedWrite)) {
-            $cu->setWrite($table->reservedWrite);
-        }
-
-        return (new ReservedThroughput)->setCapacityUnit($cu);
-    }
-
-    /**
-     * Determine if the throughput reservations have been changed.
-     */
-    public function hasReservedThroughputUpdate(Blueprint $table): bool
-    {
-        return $table->reservedRead !== null || $table->reservedWrite !== null;
-    }
-
-    /**
-     * Create a table options Protobuf message.
-     */
-    public function toTableOptions(Blueprint $table): TableOptions
-    {
-        $options = new TableOptions;
-
-        if (is_int($table->ttl)) {
-            $options->setTimeToLive($table->ttl);
-        }
-
-        if (is_int($table->maxVersions)) {
-            $options->setMaxVersions($table->maxVersions);
-        }
-
-        if (is_int($table->versionOffset)) {
-            $options->setDeviationCellVersionInSec($table->versionOffset);
-        }
-
-        if (is_bool($table->allowsUpdate)) {
-            $options->setAllowUpdate($table->allowsUpdate);
-        }
-
-        return $options;
-    }
-
-    /**
-     * Determine if the table options have been modified.
-     */
-    public function hasTableOptionsUpdate(Blueprint $table): bool
-    {
-        return $table->ttl !== null
-            || $table->maxVersions !== null
-            || $table->versionOffset !== null
-            || $table->allowsUpdate !== null;
     }
 }
