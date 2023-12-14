@@ -3,12 +3,15 @@
 use Dew\Tablestore\Schema\Blueprint;
 
 test('table can be created and deleted', function () {
+    expect(tablestore()->hasTable('testing'))->toBeFalse();
+
     tablestore()->createTable('testing', function (Blueprint $table) {
         $table->string('key')->primary();
-        $table->encryptWithKms();
     });
+    expect(tablestore()->hasTable('testing'))->toBeTrue();
 
     tablestore()->deleteTable('testing');
+    expect(tablestore()->hasTable('testing'))->toBeFalse();
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('list lists all the tables', function () {

@@ -3,6 +3,7 @@
 namespace Dew\Tablestore\Schema;
 
 use Dew\Tablestore\Concerns\InteractsWithRequest;
+use Dew\Tablestore\Exceptions\TablestoreException;
 use Dew\Tablestore\Tablestore;
 use InvalidArgumentException;
 use Protos\CreateTableRequest;
@@ -57,6 +58,24 @@ class SchemaHandler
         $response->mergeFromString($this->send('/DescribeTable', $request));
 
         return $response;
+    }
+
+    /**
+     * Determine whether the table exists.
+     */
+    public function hasTable(string $table): bool
+    {
+        try {
+            $this->getTable($table);
+
+            return true;
+        } catch (TablestoreException $e) {
+            if ($e->getError()->getCode() === 'OTSObjectNotExist') {
+                return false;
+            }
+
+            throw $e;
+        }
     }
 
     /**
