@@ -37,3 +37,22 @@ test('get describes the table', function () {
 
     tablestore()->deleteTable('describe');
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('update updates the table options', function () {
+    tablestore()->createTable('update_options', function ($table) {
+        $table->string('key')->primary();
+        $table->ttl(86400);
+        $table->maxVersions(1);
+    });
+
+    $response = tablestore()->updateTable('update_options', function ($table) {
+        $table->maxVersions(10);
+    });
+
+    expect($response->getReservedThroughputDetails()->getCapacityUnit()->getRead())->toBe(0);
+    expect($response->getReservedThroughputDetails()->getCapacityUnit()->getWrite())->toBe(0);
+    expect($response->getTableOptions()->getTimeToLive())->toBe(86400);
+    expect($response->getTableOptions()->getMaxVersions())->toBe(10);
+
+    tablestore()->deleteTable('update_options');
+})->skip(! integrationTestEnabled(), 'integration test not enabled');
