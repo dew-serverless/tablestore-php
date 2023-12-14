@@ -14,6 +14,6 @@
         <env name="ACS_ACCESS_KEY_ID" value=""/>
         <env name="ACS_ACCESS_KEY_SECRET" value=""/>
         <env name="TS_ENDPOINT" value=""/>
-        <env name="TS_INSTNACE" value=""/>
+        <env name="TS_INSTANCE" value=""/>
     </php>
 </phpunit>

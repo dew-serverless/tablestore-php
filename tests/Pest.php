@@ -97,7 +97,7 @@ function tablestore(): Tablestore
 {
     $tablestore = new Tablestore(
         getenv('ACS_ACCESS_KEY_ID'), getenv('ACS_ACCESS_KEY_SECRET'),
-        getenv('TS_ENDPOINT'), getenv('TS_INSTNACE')
+        getenv('TS_ENDPOINT'), getenv('TS_INSTANCE')
     );
 
     $token = getenv('ACS_STS_TOKEN');
