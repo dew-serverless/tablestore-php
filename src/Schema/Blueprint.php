@@ -8,6 +8,7 @@ use Protos\PrimaryKeyType;
 use Protos\ReservedThroughput;
 use Protos\SSEKeyType;
 use Protos\SSESpecification;
+use Protos\TableOptions;
 
 class Blueprint
 {
@@ -24,24 +25,9 @@ class Blueprint
     public ?ReservedThroughput $throughput = null;
 
     /**
-     * The number of seconds that data can exist.
+     * The table options.
      */
-    public ?int $ttl = null;
-
-    /**
-     * The maximum versions to persist.
-     */
-    public ?int $maxVersions = null;
-
-    /**
-     * The version offset limit.
-     */
-    public ?int $versionOffset = null;
-
-    /**
-     * Determine if the existing row can be updated.
-     */
-    public ?bool $allowsUpdate = null;
+    public ?TableOptions $options = null;
 
     /**
      * Determine if the data should be encrypted.
@@ -144,7 +130,7 @@ class Blueprint
      */
     public function ttl(int $seconds): self
     {
-        $this->ttl = $seconds;
+        $this->options = $this->options()->setTimeToLive($seconds);
 
         return $this;
     }
@@ -162,7 +148,7 @@ class Blueprint
      */
     public function maxVersions(int $versions): self
     {
-        $this->maxVersions = $versions;
+        $this->options = $this->options()->setMaxVersions($versions);
 
         return $this;
     }
@@ -172,7 +158,8 @@ class Blueprint
      */
     public function versionOffsetIn(int $seconds): self
     {
-        $this->versionOffset = $seconds;
+        $this->options = $this->options()
+            ->setDeviationCellVersionInSec($seconds);
 
         return $this;
     }
@@ -182,7 +169,7 @@ class Blueprint
      */
     public function allowUpdate(bool $allows = true): self
     {
-        $this->allowsUpdate = $allows;
+        $this->options = $this->options()->setAllowUpdate($allows);
 
         return $this;
     }
@@ -224,5 +211,13 @@ class Blueprint
         $this->encryption = null;
 
         return $this;
+    }
+
+    /**
+     * Get the current table options or create a new one.
+     */
+    protected function options(): TableOptions
+    {
+        return $this->options ?? new TableOptions;
     }
 }

@@ -71,7 +71,9 @@ class SchemaHandler
             $request->setReservedThroughput($table->throughput);
         }
 
-        $request->setTableOptions($this->toTableOptions($table));
+        if ($table->options instanceof TableOptions) {
+            $request->setTableOptions($table->options);
+        }
 
         if ($table->encryption instanceof SSESpecification) {
             $request->setSseSpec($table->encryption);
@@ -94,8 +96,8 @@ class SchemaHandler
             $request->setReservedThroughput($table->throughput);
         }
 
-        if ($this->hasTableOptionsUpdate($table)) {
-            $request->setTableOptions($this->toTableOptions($table));
+        if ($table->options instanceof TableOptions) {
+            $request->setTableOptions($table->options);
         }
 
         $response = new UpdateTableResponse;
@@ -139,42 +141,5 @@ class SchemaHandler
         return (new TableMeta)
             ->setPrimaryKey($pks)
             ->setDefinedColumn($cols);
-    }
-
-    /**
-     * Create a table options Protobuf message.
-     */
-    public function toTableOptions(Blueprint $table): TableOptions
-    {
-        $options = new TableOptions;
-
-        if (is_int($table->ttl)) {
-            $options->setTimeToLive($table->ttl);
-        }
-
-        if (is_int($table->maxVersions)) {
-            $options->setMaxVersions($table->maxVersions);
-        }
-
-        if (is_int($table->versionOffset)) {
-            $options->setDeviationCellVersionInSec($table->versionOffset);
-        }
-
-        if (is_bool($table->allowsUpdate)) {
-            $options->setAllowUpdate($table->allowsUpdate);
-        }
-
-        return $options;
-    }
-
-    /**
-     * Determine if the table options have been modified.
-     */
-    public function hasTableOptionsUpdate(Blueprint $table): bool
-    {
-        return $table->ttl !== null
-            || $table->maxVersions !== null
-            || $table->versionOffset !== null
-            || $table->allowsUpdate !== null;
     }
 }
