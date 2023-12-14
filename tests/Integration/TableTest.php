@@ -26,3 +26,14 @@ test('list lists all the tables', function () {
     tablestore()->deleteTable('list_testing_1');
     tablestore()->deleteTable('list_testing_2');
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
+
+test('get describes the table', function () {
+    tablestore()->createTable('describe', function ($table) {
+        $table->string('key')->primary();
+    });
+
+    $response = tablestore()->getTable('describe');
+    expect($response->getTableMeta()->getTableName())->toBe('describe');
+
+    tablestore()->deleteTable('describe');
+})->skip(! integrationTestEnabled(), 'integration test not enabled');

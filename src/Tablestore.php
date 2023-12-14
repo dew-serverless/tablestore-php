@@ -14,6 +14,7 @@ use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowResponse;
 use Protos\CreateTableResponse;
 use Protos\DeleteTableResponse;
+use Protos\DescribeTableResponse;
 use Protos\ListTableResponse;
 use Psr\Http\Message\ResponseInterface;
 
@@ -109,6 +110,14 @@ class Tablestore
     public function listTable(): ListTableResponse
     {
         return (new SchemaHandler($this))->listTable();
+    }
+
+    /**
+     * Get the table information.
+     */
+    public function getTable(string $table): DescribeTableResponse
+    {
+        return (new SchemaHandler($this))->getTable($table);
     }
 
     /**

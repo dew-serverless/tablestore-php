@@ -11,6 +11,8 @@ use Protos\CreateTableResponse;
 use Protos\DefinedColumnSchema;
 use Protos\DeleteTableRequest;
 use Protos\DeleteTableResponse;
+use Protos\DescribeTableRequest;
+use Protos\DescribeTableResponse;
 use Protos\ListTableRequest;
 use Protos\ListTableResponse;
 use Protos\PrimaryKeySchema;
@@ -39,6 +41,19 @@ class SchemaHandler
     {
         $response = new ListTableResponse;
         $response->mergeFromString($this->send('/ListTable', new ListTableRequest));
+
+        return $response;
+    }
+
+    /**
+     * Get the table information.
+     */
+    public function getTable(string $table): DescribeTableResponse
+    {
+        $request = (new DescribeTableRequest)->setTableName($table);
+
+        $response = new DescribeTableResponse;
+        $response->mergeFromString($this->send('/DescribeTable', $request));
 
         return $response;
     }
