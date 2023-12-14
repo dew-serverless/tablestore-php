@@ -122,6 +122,14 @@ class Tablestore
     }
 
     /**
+     * Determine whether the table exists.
+     */
+    public function hasTable(string $table): bool
+    {
+        return (new SchemaHandler($this))->hasTable($table);
+    }
+
+    /**
      * Create a new table.
      *
      * @param  callable(\Dew\Tablestore\Schema\Blueprint): void  $callback
