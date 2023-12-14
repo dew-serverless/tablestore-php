@@ -61,3 +61,4 @@ jobs:
           ACS_ACCESS_KEY_ID: ${{ secrets.ACS_ACCESS_KEY_ID }}
           ACS_ACCESS_KEY_SECRET: ${{ secrets.ACS_ACCESS_KEY_SECRET }}
           TS_ENDPOINT: ${{ secrets.TS_ENDPOINT }}
+          TS_INSTANCE: ${{ secrets.TS_INSTANCE }}
