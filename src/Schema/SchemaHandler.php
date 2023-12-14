@@ -5,7 +5,6 @@ namespace Dew\Tablestore\Schema;
 use Dew\Tablestore\Concerns\InteractsWithRequest;
 use Dew\Tablestore\Tablestore;
 use InvalidArgumentException;
-use Protos\CapacityUnit;
 use Protos\CreateTableRequest;
 use Protos\CreateTableResponse;
 use Protos\DefinedColumnSchema;
@@ -67,7 +66,11 @@ class SchemaHandler
     {
         $request = new CreateTableRequest;
         $request->setTableMeta($this->toTableMeta($table)->setTableName($name));
-        $request->setReservedThroughput($this->toReservedThroughput($table));
+
+        if ($table->throughput instanceof ReservedThroughput) {
+            $request->setReservedThroughput($table->throughput);
+        }
+
         $request->setTableOptions($this->toTableOptions($table));
 
         if ($table->encryption instanceof SSESpecification) {
@@ -87,8 +90,8 @@ class SchemaHandler
     {
         $request = (new UpdateTableRequest)->setTableName($name);
 
-        if ($this->hasReservedThroughputUpdate($table)) {
-            $request->setReservedThroughput($this->toReservedThroughput($table));
+        if ($table->throughput instanceof ReservedThroughput) {
+            $request->setReservedThroughput($table->throughput);
         }
 
         if ($this->hasTableOptionsUpdate($table)) {
@@ -136,32 +139,6 @@ class SchemaHandler
         return (new TableMeta)
             ->setPrimaryKey($pks)
             ->setDefinedColumn($cols);
-    }
-
-    /**
-     * Create a throughput reservations Protobuf message.
-     */
-    public function toReservedThroughput(Blueprint $table): ReservedThroughput
-    {
-        $cu = new CapacityUnit;
-
-        if (is_int($table->reservedRead)) {
-            $cu->setRead($table->reservedRead);
-        }
-
-        if (is_int($table->reservedWrite)) {
-            $cu->setWrite($table->reservedWrite);
-        }
-
-        return (new ReservedThroughput)->setCapacityUnit($cu);
-    }
-
-    /**
-     * Determine if the throughput reservations have been changed.
-     */
-    public function hasReservedThroughputUpdate(Blueprint $table): bool
-    {
-        return $table->reservedRead !== null || $table->reservedWrite !== null;
     }
 
     /**

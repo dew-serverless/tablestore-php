@@ -2,8 +2,10 @@
 
 namespace Dew\Tablestore\Schema;
 
+use Protos\CapacityUnit;
 use Protos\DefinedColumnType;
 use Protos\PrimaryKeyType;
+use Protos\ReservedThroughput;
 use Protos\SSEKeyType;
 use Protos\SSESpecification;
 
@@ -17,18 +19,9 @@ class Blueprint
     public array $columns = [];
 
     /**
-     * The throughput reservations for reading in capacity unit.
-     *
-     * @var non-negative-int|null
+     * The throughput reservations.
      */
-    public ?int $reservedRead = null;
-
-    /**
-     * The throughput reservations for writing in capacity unit.
-     *
-     * @var non-negative-int|null
-     */
-    public ?int $reservedWrite = null;
+    public ?ReservedThroughput $throughput = null;
 
     /**
      * The number of seconds that data can exist.
@@ -123,7 +116,10 @@ class Blueprint
      */
     public function reserveRead(int $capacityUnit): self
     {
-        $this->reservedRead = $capacityUnit;
+        $cu = $this->throughput?->getCapacityUnit() ?? new CapacityUnit;
+        $cu->setRead($capacityUnit);
+
+        $this->throughput = (new ReservedThroughput)->setCapacityUnit($cu);
 
         return $this;
     }
@@ -135,7 +131,10 @@ class Blueprint
      */
     public function reserveWrite(int $capacityUnit): self
     {
-        $this->reservedWrite = $capacityUnit;
+        $cu = $this->throughput?->getCapacityUnit() ?? new CapacityUnit;
+        $cu->setWrite($capacityUnit);
+
+        $this->throughput = (new ReservedThroughput)->setCapacityUnit($cu);
 
         return $this;
     }

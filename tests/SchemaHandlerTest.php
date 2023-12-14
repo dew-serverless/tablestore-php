@@ -56,18 +56,6 @@ test('attribute column definition', function () {
         ->and($cols[4]->getType())->toBe(DefinedColumnType::DCT_BLOB);
 });
 
-test('throughput reserves read', function () {
-    $table = (new Blueprint)->reserveRead(2);
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    expect($handler->toReservedThroughput($table)->getCapacityUnit()->getRead())->toBe(2);
-});
-
-test('throughput reserves write', function () {
-    $table = (new Blueprint)->reserveRead(1);
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    expect($handler->toReservedThroughput($table)->getCapacityUnit()->getRead())->toBe(1);
-});
-
 test('table option configures time-to-live', function () {
     $table = (new Blueprint)->ttl(86400);
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
@@ -102,13 +90,6 @@ test('table option denies update', function () {
     $table = (new Blueprint)->allowUpdate(false);
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     expect($handler->toTableOptions($table)->getAllowUpdate())->toBeFalse();
-});
-
-test('throughput reservations change determination', function () {
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    expect($handler->hasReservedThroughputUpdate(new Blueprint))->toBeFalse();
-    expect($handler->hasReservedThroughputUpdate((new Blueprint)->reserveRead(2)))->toBeTrue();
-    expect($handler->hasReservedThroughputUpdate((new Blueprint)->reserveWrite(1)))->toBeTrue();
 });
 
 test('table options modify determination', function () {
