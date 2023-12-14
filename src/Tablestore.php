@@ -14,6 +14,7 @@ use Protos\BatchGetRowResponse;
 use Protos\BatchWriteRowResponse;
 use Protos\CreateTableResponse;
 use Protos\DeleteTableResponse;
+use Protos\ListTableResponse;
 use Psr\Http\Message\ResponseInterface;
 
 class Tablestore
@@ -100,6 +101,14 @@ class Tablestore
         $this->token = $token;
 
         return $this;
+    }
+
+    /**
+     * List all the tables in the instance.
+     */
+    public function listTable(): ListTableResponse
+    {
+        return (new SchemaHandler($this))->listTable();
     }
 
     /**

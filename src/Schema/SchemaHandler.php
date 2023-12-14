@@ -11,6 +11,8 @@ use Protos\CreateTableResponse;
 use Protos\DefinedColumnSchema;
 use Protos\DeleteTableRequest;
 use Protos\DeleteTableResponse;
+use Protos\ListTableRequest;
+use Protos\ListTableResponse;
 use Protos\PrimaryKeySchema;
 use Protos\ReservedThroughput;
 use Protos\SSESpecification;
@@ -28,6 +30,17 @@ class SchemaHandler
         protected Tablestore $tablestore
     ) {
         //
+    }
+
+    /**
+     * List all the tables in the instance.
+     */
+    public function listTable(): ListTableResponse
+    {
+        $response = new ListTableResponse;
+        $response->mergeFromString($this->send('/ListTable', new ListTableRequest));
+
+        return $response;
     }
 
     /**
