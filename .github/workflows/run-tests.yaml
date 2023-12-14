@@ -31,3 +31,33 @@ jobs:
 
       - name: Execute Tests
         run: composer test:unit
+
+  integration:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: integration
+
+    name: Integration Test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install Dependencies
+        run: composer update --prefer-stable --no-interaction --no-progress --ansi
+
+      - name: Run Integration Test
+        run: composer test:integration
+        env:
+          INTEGRATION_TEST_ENABLED: true
+          ACS_ACCESS_KEY_ID: ${{ secrets.ACS_ACCESS_KEY_ID }}
+          ACS_ACCESS_KEY_SECRET: ${{ secrets.ACS_ACCESS_KEY_SECRET }}
+          TS_ENDPOINT: ${{ secrets.TS_ENDPOINT }}
