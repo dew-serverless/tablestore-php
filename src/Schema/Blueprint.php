@@ -19,36 +19,36 @@ class Blueprint
     /**
      * The throughput reservations for reading in capacity unit.
      *
-     * @var non-negative-int
+     * @var non-negative-int|null
      */
-    public int $reservedRead = 0;
+    public ?int $reservedRead = null;
 
     /**
      * The throughput reservations for writing in capacity unit.
      *
-     * @var non-negative-int
+     * @var non-negative-int|null
      */
-    public int $reservedWrite = 0;
+    public ?int $reservedWrite = null;
 
     /**
      * The number of seconds that data can exist.
      */
-    public int $ttl = -1;
+    public ?int $ttl = null;
 
     /**
      * The maximum versions to persist.
      */
-    public int $maxVersions = 1;
+    public ?int $maxVersions = null;
 
     /**
      * The version offset limit.
      */
-    public int $versionOffset = 86400;
+    public ?int $versionOffset = null;
 
     /**
      * Determine if the existing row can be updated.
      */
-    public bool $allowsUpdate = true;
+    public ?bool $allowsUpdate = null;
 
     /**
      * Determine if the data should be encrypted.

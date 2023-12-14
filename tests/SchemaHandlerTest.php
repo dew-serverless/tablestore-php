@@ -68,28 +68,14 @@ test('throughput reserves write', function () {
     expect($handler->toReservedThroughput($table)->getCapacityUnit()->getRead())->toBe(1);
 });
 
-test('throughput no reservations by default', function () {
-    $table = new Blueprint;
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    $throughput = $handler->toReservedThroughput($table);
-    expect($throughput->getCapacityUnit()->getRead())->toBe(0)
-        ->and($throughput->getCapacityUnit()->getWrite())->toBe(0);
-});
-
 test('table option configures time-to-live', function () {
     $table = (new Blueprint)->ttl(86400);
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     expect($handler->toTableOptions($table)->getTimeToLive())->toBe(86400);
 });
 
-test('table option configures data that never expires', function () {
+test('table option configures data that is stored permanently', function () {
     $table = (new Blueprint)->forever();
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    expect($handler->toTableOptions($table)->getTimeToLive())->toBe(-1);
-});
-
-test('table option data is stored permanently by default', function () {
-    $table = new Blueprint;
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     expect($handler->toTableOptions($table)->getTimeToLive())->toBe(-1);
 });
@@ -100,26 +86,14 @@ test('table option defines max versions to persist', function () {
     expect($handler->toTableOptions($table)->getMaxVersions())->toBe(2);
 });
 
-test('table option persists 1 version by default', function () {
-    $table = new Blueprint;
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    expect($handler->toTableOptions($table)->getMaxVersions())->toBe(1);
-});
-
 test('table option limits version offset', function () {
     $table = (new Blueprint)->versionOffsetIn(86400 * 2); // 2 days
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     expect($handler->toTableOptions($table)->getDeviationCellVersionInSec())->toBe(86400 * 2);
 });
 
-test('table option version offset limit is 1 day by deafult', function () {
-    $table = new Blueprint;
-    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
-    expect($handler->toTableOptions($table)->getDeviationCellVersionInSec())->toBe(86400);
-});
-
-test('table option allows update by default', function () {
-    $table = new Blueprint;
+test('table option allows update', function () {
+    $table = (new Blueprint)->allowUpdate();
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     expect($handler->toTableOptions($table)->getAllowUpdate())->toBeTrue();
 });
@@ -128,4 +102,21 @@ test('table option denies update', function () {
     $table = (new Blueprint)->allowUpdate(false);
     $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
     expect($handler->toTableOptions($table)->getAllowUpdate())->toBeFalse();
+});
+
+test('throughput reservations change determination', function () {
+    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
+    expect($handler->hasReservedThroughputUpdate(new Blueprint))->toBeFalse();
+    expect($handler->hasReservedThroughputUpdate((new Blueprint)->reserveRead(2)))->toBeTrue();
+    expect($handler->hasReservedThroughputUpdate((new Blueprint)->reserveWrite(1)))->toBeTrue();
+});
+
+test('table options modify determination', function () {
+    $handler = new SchemaHandler(Mockery::mock(Tablestore::class));
+    expect($handler->hasTableOptionsUpdate(new Blueprint))->toBeFalse();
+    expect($handler->hasTableOptionsUpdate((new Blueprint)->ttl(86400 * 30)))->toBeTrue();
+    expect($handler->hasTableOptionsUpdate((new Blueprint)->maxVersions(10)))->toBeTrue();
+    expect($handler->hasTableOptionsUpdate((new Blueprint)->versionOffsetIn(86400)))->toBeTrue();
+    expect($handler->hasTableOptionsUpdate((new Blueprint)->allowUpdate(true)))->toBeTrue();
+    expect($handler->hasTableOptionsUpdate((new Blueprint)->allowUpdate(false)))->toBeTrue();
 });

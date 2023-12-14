@@ -20,6 +20,8 @@ use Protos\ReservedThroughput;
 use Protos\SSESpecification;
 use Protos\TableMeta;
 use Protos\TableOptions;
+use Protos\UpdateTableRequest;
+use Protos\UpdateTableResponse;
 
 class SchemaHandler
 {
@@ -79,6 +81,27 @@ class SchemaHandler
     }
 
     /**
+     * Update an existing table.
+     */
+    public function updateTable(string $name, Blueprint $table): UpdateTableResponse
+    {
+        $request = (new UpdateTableRequest)->setTableName($name);
+
+        if ($this->hasReservedThroughputUpdate($table)) {
+            $request->setReservedThroughput($this->toReservedThroughput($table));
+        }
+
+        if ($this->hasTableOptionsUpdate($table)) {
+            $request->setTableOptions($this->toTableOptions($table));
+        }
+
+        $response = new UpdateTableResponse;
+        $response->mergeFromString($this->send('/UpdateTable', $request));
+
+        return $response;
+    }
+
+    /**
      * Delete the existing table.
      */
     public function deleteTable(string $name): DeleteTableResponse
@@ -120,11 +143,25 @@ class SchemaHandler
      */
     public function toReservedThroughput(Blueprint $table): ReservedThroughput
     {
-        return (new ReservedThroughput)->setCapacityUnit(
-            (new CapacityUnit)
-                ->setRead($table->reservedRead)
-                ->setWrite($table->reservedWrite)
-        );
+        $cu = new CapacityUnit;
+
+        if (is_int($table->reservedRead)) {
+            $cu->setRead($table->reservedRead);
+        }
+
+        if (is_int($table->reservedWrite)) {
+            $cu->setWrite($table->reservedWrite);
+        }
+
+        return (new ReservedThroughput)->setCapacityUnit($cu);
+    }
+
+    /**
+     * Determine if the throughput reservations have been changed.
+     */
+    public function hasReservedThroughputUpdate(Blueprint $table): bool
+    {
+        return $table->reservedRead !== null || $table->reservedWrite !== null;
     }
 
     /**
@@ -132,10 +169,35 @@ class SchemaHandler
      */
     public function toTableOptions(Blueprint $table): TableOptions
     {
-        return (new TableOptions)
-            ->setTimeToLive($table->ttl)
-            ->setMaxVersions($table->maxVersions)
-            ->setDeviationCellVersionInSec($table->versionOffset)
-            ->setAllowUpdate($table->allowsUpdate);
+        $options = new TableOptions;
+
+        if (is_int($table->ttl)) {
+            $options->setTimeToLive($table->ttl);
+        }
+
+        if (is_int($table->maxVersions)) {
+            $options->setMaxVersions($table->maxVersions);
+        }
+
+        if (is_int($table->versionOffset)) {
+            $options->setDeviationCellVersionInSec($table->versionOffset);
+        }
+
+        if (is_bool($table->allowsUpdate)) {
+            $options->setAllowUpdate($table->allowsUpdate);
+        }
+
+        return $options;
+    }
+
+    /**
+     * Determine if the table options have been modified.
+     */
+    public function hasTableOptionsUpdate(Blueprint $table): bool
+    {
+        return $table->ttl !== null
+            || $table->maxVersions !== null
+            || $table->versionOffset !== null
+            || $table->allowsUpdate !== null;
     }
 }

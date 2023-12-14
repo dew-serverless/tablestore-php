@@ -16,6 +16,7 @@ use Protos\CreateTableResponse;
 use Protos\DeleteTableResponse;
 use Protos\DescribeTableResponse;
 use Protos\ListTableResponse;
+use Protos\UpdateTableResponse;
 use Psr\Http\Message\ResponseInterface;
 
 class Tablestore
@@ -127,9 +128,27 @@ class Tablestore
      */
     public function createTable(string $table, callable $callback): CreateTableResponse
     {
-        $callback($blueprint = new Blueprint);
+        $blueprint = (new Blueprint)
+            ->reserveRead(0)
+            ->reserveWrite(0)
+            ->forever()
+            ->maxVersions(1);
+
+        $callback($blueprint);
 
         return (new SchemaHandler($this))->createTable($table, $blueprint);
+    }
+
+    /**
+     * Update an existing table.
+     *
+     * @param  callable(\Dew\Tablestore\Schema\Blueprint): void  $callback
+     */
+    public function updateTable(string $table, callable $callback): UpdateTableResponse
+    {
+        $callback($blueprint = new Blueprint);
+
+        return (new SchemaHandler($this))->updateTable($table, $blueprint);
     }
 
     /**
