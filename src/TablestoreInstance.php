@@ -218,7 +218,7 @@ class TablestoreInstance
     public function send(string $method, string $endpoint, array $options = []): ResponseInterface
     {
         $handler = HandlerStack::create();
-        $handler->push(ConfigureMetadata::acs($this));
+        $handler->push(ConfigureMetadata::forAcs($this));
         $handler->push(SignRequest::acs($this->signature(), $this->accessKeyId));
 
         $client = new Client(array_merge($this->options(), [

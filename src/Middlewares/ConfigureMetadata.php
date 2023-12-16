@@ -39,7 +39,7 @@ class ConfigureMetadata
      *
      * @return callable(callable): callable
      */
-    public static function acs(TablestoreInstance $tablestore): callable
+    public static function forAcs(TablestoreInstance $tablestore): callable
     {
         return static fn (callable $handler): callable => static function (
             RequestInterface $request, array $options
