@@ -17,6 +17,34 @@ class TablestoreSignature implements BuildsSignature
     }
 
     /**
+     * The algorithm in ACS format.
+     */
+    public function algorithmForAcs(): string
+    {
+        return $this->algorithm();
+    }
+
+    /**
+     * The algorithm.
+     */
+    public function algorithm(): string
+    {
+        return 'sha1';
+    }
+
+    /**
+     * Get the headers for signature calculation.
+     *
+     * @return  string[]
+     */
+    public function signedHeaders(RequestInterface $request): array
+    {
+        return array_filter(array_keys($request->getHeaders()),
+            fn ($header): bool => $this->isMetadataHeader($header)
+        );
+    }
+
+    /**
      * Build the signature for the given request.
      */
     public function build(RequestInterface $request): string
@@ -25,30 +53,15 @@ class TablestoreSignature implements BuildsSignature
             $request->getUri()->getPath(),
             $request->getMethod(),
             '',
-            $this->contextFrom($request),
+            implode("\n", array_map(fn ($name): string => sprintf('%s:%s',
+                $name, $request->getHeaderLine($name)
+            ), $this->signedHeaders($request))),
             '',
         ]);
 
         return base64_encode(
-            hash_hmac('sha1', $data, $this->key, binary: true)
+            hash_hmac($this->algorithm(), $data, $this->key, binary: true)
         );
-    }
-
-    /**
-     * Extract context from the given request.
-     */
-    protected function contextFrom(RequestInterface $request): string
-    {
-        $headers = $request->getHeaders();
-
-        $headers = array_filter($headers, fn ($header): bool => $this->isMetadataHeader($header), ARRAY_FILTER_USE_KEY);
-
-        $headers = array_map(
-            fn ($value, $header): string => sprintf('%s:%s', $header, end($value)),
-            array_values($headers), array_keys($headers)
-        );
-
-        return implode("\n", $headers);
     }
 
     /**

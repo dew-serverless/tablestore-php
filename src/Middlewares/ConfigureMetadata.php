@@ -3,6 +3,7 @@
 namespace Dew\Tablestore\Middlewares;
 
 use Dew\Tablestore\Tablestore;
+use Dew\Tablestore\TablestoreInstance;
 use GuzzleHttp\Middleware;
 use Psr\Http\Message\RequestInterface;
 
@@ -31,5 +32,32 @@ class ConfigureMetadata
 
             return $request;
         });
+    }
+
+    /**
+     * Make a middleware to configure ACS metadata.
+     *
+     * @return callable(callable): callable
+     */
+    public static function acs(TablestoreInstance $tablestore): callable
+    {
+        return static fn (callable $handler): callable => static function (
+            RequestInterface $request, array $options
+        ) use ($handler, $tablestore) {
+            $request = $request
+                ->withHeader('x-acs-action', $options['acs']['action'])
+                ->withHeader('x-acs-date', gmdate('Y-m-d\\TH:i:s\\Z'))
+                ->withHeader('x-acs-version', $options['acs']['version']);
+
+            if (is_string($tablestore->token())) {
+                $request = $request
+                    ->withHeader('x-acs-accesskey-id', $tablestore->accessKeyId())
+                    ->withHeader('x-acs-security-token', $tablestore->token());
+            }
+
+            unset($options['acs']);
+
+            return $handler($request, $options);
+        };
     }
 }

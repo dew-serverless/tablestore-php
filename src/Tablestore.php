@@ -2,6 +2,7 @@
 
 namespace Dew\Tablestore;
 
+use Dew\Tablestore\Concerns\CommunicatesWithAcs;
 use Dew\Tablestore\Contracts\BuildsSignature;
 use Dew\Tablestore\Middlewares\ConfigureMetadata;
 use Dew\Tablestore\Middlewares\SignRequest;
@@ -21,27 +22,12 @@ use Psr\Http\Message\ResponseInterface;
 
 class Tablestore
 {
-    /**
-     * The signature builder.
-     */
-    protected BuildsSignature $signature;
+    use CommunicatesWithAcs;
 
     /**
      * The instance name.
      */
     protected string $instance;
-
-    /**
-     * The STS token for the access key.
-     */
-    protected string $token;
-
-    /**
-     * The HTTP request options.
-     *
-     * @var array<string, mixed>
-     */
-    protected array $options = [];
 
     /**
      * Create a Tablestore.
@@ -56,53 +42,11 @@ class Tablestore
     }
 
     /**
-     * The ACS access key ID.
-     */
-    public function accessKeyId(): string
-    {
-        return $this->accessKeyId;
-    }
-
-    /**
-     * The ACS access key secret.
-     */
-    public function accessKeySecret(): string
-    {
-        return $this->accessKeySecret;
-    }
-
-    /**
-     * The Tablestore endpoint.
-     */
-    public function endpoint(): string
-    {
-        return $this->endpoint;
-    }
-
-    /**
      * The Tablestore instance name.
      */
     public function instanceName(): string
     {
         return $this->instance;
-    }
-
-    /**
-     * The STS token for the access key.
-     */
-    public function token(): ?string
-    {
-        return $this->token ?? null;
-    }
-
-    /**
-     * Configure STS token for the access key.
-     */
-    public function tokenUsing(string $token): self
-    {
-        $this->token = $token;
-
-        return $this;
     }
 
     /**
@@ -207,46 +151,10 @@ class Tablestore
     }
 
     /**
-     * The signature builder.
+     * Create a new signature builder.
      */
-    public function signature(): BuildsSignature
+    protected function newSignature(): BuildsSignature
     {
-        return $this->signature ??= new TablestoreSignature($this->accessKeySecret);
-    }
-
-    /**
-     * Set signature builder.
-     */
-    public function signatureUsing(BuildsSignature $signature): self
-    {
-        $this->signature = $signature;
-
-        return $this;
-    }
-
-    /**
-     * The HTTP request options.
-     *
-     * @return array<string, mixed>
-     */
-    public function options(): array
-    {
-        $default = [
-            'timeout' => 2.0,
-        ];
-
-        return array_merge($default, $this->options);
-    }
-
-    /**
-     * Configure HTTP request options.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function optionsUsing(array $options): self
-    {
-        $this->options = $options;
-
-        return $this;
+        return new TablestoreSignature($this->accessKeySecret);
     }
 }

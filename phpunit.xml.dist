@@ -13,6 +13,7 @@
         <env name="INTEGRATION_TEST_ENABLED" value="false"/>
         <env name="ACS_ACCESS_KEY_ID" value=""/>
         <env name="ACS_ACCESS_KEY_SECRET" value=""/>
+        <env name="ACS_DEFAULT_REGION" value="us-west-1"/>
         <env name="TS_ENDPOINT" value=""/>
         <env name="TS_INSTANCE" value=""/>
     </php>
