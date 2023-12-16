@@ -14,7 +14,7 @@ class ConfigureMetadata
      *
      * @return callable(callable): callable
      */
-    public static function make(Tablestore $tablestore): callable
+    public static function forOts(Tablestore $tablestore): callable
     {
         return Middleware::mapRequest(function (RequestInterface $request) use ($tablestore): RequestInterface {
             $request = $request

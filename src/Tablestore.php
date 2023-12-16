@@ -139,7 +139,7 @@ class Tablestore
     public function send(string $endpoint, Message $message): ResponseInterface
     {
         $handler = HandlerStack::create();
-        $handler->push(ConfigureMetadata::make($this));
+        $handler->push(ConfigureMetadata::forOts($this));
         $handler->push(SignRequest::make($this->signature()));
 
         $client = new Client(array_merge($this->options(), [
