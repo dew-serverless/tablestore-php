@@ -5,6 +5,7 @@ namespace Dew\Tablestore\Middlewares;
 use Dew\Tablestore\Tablestore;
 use Dew\Tablestore\TablestoreInstance;
 use GuzzleHttp\Middleware;
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 
 class ConfigureMetadata
@@ -45,9 +46,12 @@ class ConfigureMetadata
             RequestInterface $request, array $options
         ) use ($handler, $tablestore) {
             $request = $request
-                ->withHeader('x-acs-action', $options['acs']['action'])
+                ->withHeader('x-acs-action', $options['acs']['action']
+                    ?? throw new InvalidArgumentException('API requires action name.'))
                 ->withHeader('x-acs-date', gmdate('Y-m-d\\TH:i:s\\Z'))
-                ->withHeader('x-acs-version', $options['acs']['version']);
+                ->withHeader('x-acs-version', $options['acs']['version']
+                    ?? throw new InvalidArgumentException('API requires version number.')
+                );
 
             if (is_string($tablestore->token())) {
                 $request = $request
