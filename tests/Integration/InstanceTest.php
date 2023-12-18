@@ -2,8 +2,7 @@
 
 test('list lists all instances', function () {
     $response = instance()->all();
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKeys(['TotalCount', 'NextToken', 'Instances']);
+    expect($response->json())->toHaveKeys(['TotalCount', 'NextToken', 'Instances']);
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('create creates new instance', function () {
@@ -15,19 +14,16 @@ test('create creates new instance', function () {
         'Network' => 'NORMAL',
     ]);
 
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('RequestId');
+    expect($response->json('RequestId'))->toBeString()->not->toBeEmpty();
 
     return $instance;
 })->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('get retrieves instance information', function (string $instance) {
     $response = instance()->get($instance);
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKeys(['InstanceName', 'InstanceDescription', 'AliasName'])
-        ->and($data['InstanceName'])->toBe($instance)
-        ->and($data['InstanceDescription'])->toBe('bar')
-        ->and($data['AliasName'])->toBe('foo');
+    expect($response->json('InstanceName'))->toBe($instance)
+        ->and($response->json('InstanceDescription'))->toBe('bar')
+        ->and($response->json('AliasName'))->toBe('foo');
 })->depends('create creates new instance')
     ->skip(! integrationTestEnabled(), 'integration test not enabled');
 
@@ -36,38 +32,28 @@ test('update updates instance', function (string $instance) {
         'InstanceName' => $instance,
         'InstanceDescription' => 'updated',
     ]);
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('RequestId');
+    expect($response->json('RequestId'))->toBeString()->not->toBeEmpty();
 })->depends('create creates new instance')
     ->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('tag attaches tags to instance', function (string $instance) {
     $response = instance()->tagInstance($instance, ['Test' => 'true']);
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('RequestId');
+    expect($response->json('RequestId'))->toBeString()->not->toBeEmpty();
 
     $response = instance()->get($instance);
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('Tags')
-        ->and($data['Tags'])->toBe([['Key' => 'Test', 'Value' => 'true']]);
+    expect($response->json('Tags'))->toBe([['Key' => 'Test', 'Value' => 'true']]);
 })->depends('create creates new instance')
     ->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('untag removes tags from instance', function (string $instance) {
     $response = instance()->untagInstance($instance, 'Test');
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('RequestId');
-
-    $response = instance()->get($instance);
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('Tags')
-        ->and($data['Tags'])->toBe([]);
+    expect($response->json('RequestId'))->toBeString()->not->toBeEmpty()
+        ->and(instance()->get($instance)->json('Tags'))->toBe([]);
 })->depends('create creates new instance')
     ->skip(! integrationTestEnabled(), 'integration test not enabled');
 
 test('delete deletes the instance', function (string $instance) {
     $response = instance()->delete($instance);
-    $data = json_decode($response->getBody()->getContents(), associative: true);
-    expect($data)->toBeArray()->toHaveKey('RequestId');
+    expect($response->json('RequestId'))->toBeString()->not->toBeEmpty();
 })->depends('create creates new instance')
     ->skip(! integrationTestEnabled(), 'integration test not enabled');

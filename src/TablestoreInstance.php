@@ -6,9 +6,9 @@ use Dew\Tablestore\Concerns\CommunicatesWithAcs;
 use Dew\Tablestore\Contracts\BuildsSignature;
 use Dew\Tablestore\Middlewares\ConfigureMetadata;
 use Dew\Tablestore\Middlewares\SignRequest;
+use Dew\Tablestore\Responses\Response;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
-use Psr\Http\Message\ResponseInterface;
 
 class TablestoreInstance
 {
@@ -47,8 +47,9 @@ class TablestoreInstance
      * List instances by the given criteria.
      *
      * @param  array{status?: string, maxResults?: int, nextToken?: string}  $criteria
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function all(array $criteria = []): ResponseInterface
+    public function all(array $criteria = []): Response
     {
         return $this->send('GET', '/v2/openapi/listinstances', [
             'query' => $criteria,
@@ -61,8 +62,10 @@ class TablestoreInstance
 
     /**
      * Get Tablestore instance information.
+     *
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function get(string $instance): ResponseInterface
+    public function get(string $instance): Response
     {
         return $this->send('GET', '/v2/openapi/getinstance', [
             'query' => [
@@ -85,8 +88,9 @@ class TablestoreInstance
      *   ClusterType?: string,
      *   Network?: string
      * }  $instance
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function create(array $instance): ResponseInterface
+    public function create(array $instance): Response
     {
         return $this->send('POST', '/v2/openapi/createinstance', [
             'json' => $instance,
@@ -106,8 +110,9 @@ class TablestoreInstance
      *   AliasName?: string,
      *   Network?: string
      * }  $instance
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function update(array $instance): ResponseInterface
+    public function update(array $instance): Response
     {
         return $this->send('POST', '/v2/openapi/updateinstance', [
             'json' => $instance,
@@ -120,8 +125,10 @@ class TablestoreInstance
 
     /**
      * Delete Tablestore instance.
+     *
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function delete(string $instance): ResponseInterface
+    public function delete(string $instance): Response
     {
         return $this->send('POST', '/v2/openapi/deleteinstance', [
             'json' => [
@@ -142,8 +149,9 @@ class TablestoreInstance
      *   ResourceType: string,
      *   Tags: array{Key: string, Value: string}[]
      * }  $data
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function tag(array $data): ResponseInterface
+    public function tag(array $data): Response
     {
         return $this->send('POST', '/v2/openapi/tagresources', [
             'json' => $data,
@@ -159,8 +167,9 @@ class TablestoreInstance
      *
      * @param  string|string[]  $instances
      * @param  array<string, string>  $tags
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function tagInstance(array|string $instances, array $tags): ResponseInterface
+    public function tagInstance(array|string $instances, array $tags): Response
     {
         $build = [];
 
@@ -183,8 +192,9 @@ class TablestoreInstance
      *   ResourceType: string,
      *   TagKeys: string[]
      * }  $data
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function untag(array $data): ResponseInterface
+    public function untag(array $data): Response
     {
         return $this->send('POST', '/v2/openapi/untagresources', [
             'json' => $data,
@@ -200,8 +210,9 @@ class TablestoreInstance
      *
      * @param  string[]|string  $instances
      * @param  string[]|string  $tags
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function untagInstance(array|string $instances, array|string $tags): ResponseInterface
+    public function untagInstance(array|string $instances, array|string $tags): Response
     {
         return $this->untag([
             'ResourceType' => 'INSTANCE',
@@ -214,8 +225,9 @@ class TablestoreInstance
      * Send the HTTP request.
      *
      * @param  array<string, mixed>  $options
+     * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
-    public function send(string $method, string $endpoint, array $options = []): ResponseInterface
+    public function send(string $method, string $endpoint, array $options = []): Response
     {
         $handler = HandlerStack::create();
         $handler->push(ConfigureMetadata::forAcs($this));
@@ -226,7 +238,7 @@ class TablestoreInstance
             'handler' => $handler,
         ]));
 
-        return $client->request($method, $endpoint, $options);
+        return new Response($client->request($method, $endpoint, $options));
     }
 
     /**
