@@ -10,6 +10,9 @@ use Dew\Tablestore\Responses\Response;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 
+/**
+ * @phpstan-type InstanceTag array{Key: string, Value: string}
+ */
 class TablestoreInstance
 {
     use CommunicatesWithAcs;
@@ -87,6 +90,7 @@ class TablestoreInstance
      *   AliasName?: string,
      *   ClusterType?: string,
      *   Network?: string
+     *   Tags?: InstanceTag[]
      * }  $instance
      * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
@@ -147,7 +151,7 @@ class TablestoreInstance
      * @param  array{
      *   ResourceIds: string[],
      *   ResourceType: string,
-     *   Tags: array{Key: string, Value: string}[]
+     *   Tags: InstanceTag[]
      * }  $data
      * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
      */
