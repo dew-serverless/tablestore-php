@@ -3,7 +3,9 @@
 namespace Dew\Tablestore\Middlewares;
 
 use Dew\Tablestore\Tablestore;
+use Dew\Tablestore\TablestoreInstance;
 use GuzzleHttp\Middleware;
+use InvalidArgumentException;
 use Psr\Http\Message\RequestInterface;
 
 class ConfigureMetadata
@@ -13,7 +15,7 @@ class ConfigureMetadata
      *
      * @return callable(callable): callable
      */
-    public static function make(Tablestore $tablestore): callable
+    public static function forOts(Tablestore $tablestore): callable
     {
         return Middleware::mapRequest(function (RequestInterface $request) use ($tablestore): RequestInterface {
             $request = $request
@@ -31,5 +33,35 @@ class ConfigureMetadata
 
             return $request;
         });
+    }
+
+    /**
+     * Make a middleware to configure ACS metadata.
+     *
+     * @return callable(callable): callable
+     */
+    public static function forAcs(TablestoreInstance $tablestore): callable
+    {
+        return static fn (callable $handler): callable => static function (
+            RequestInterface $request, array $options
+        ) use ($handler, $tablestore) {
+            $request = $request
+                ->withHeader('x-acs-action', $options['acs']['action']
+                    ?? throw new InvalidArgumentException('API requires action name.'))
+                ->withHeader('x-acs-date', gmdate('Y-m-d\\TH:i:s\\Z'))
+                ->withHeader('x-acs-version', $options['acs']['version']
+                    ?? throw new InvalidArgumentException('API requires version number.')
+                );
+
+            if (is_string($tablestore->token())) {
+                $request = $request
+                    ->withHeader('x-acs-accesskey-id', $tablestore->accessKeyId())
+                    ->withHeader('x-acs-security-token', $tablestore->token());
+            }
+
+            unset($options['acs']);
+
+            return $handler($request, $options);
+        };
     }
 }

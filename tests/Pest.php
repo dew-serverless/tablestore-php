@@ -2,6 +2,7 @@
 
 use Dew\Tablestore\Builder;
 use Dew\Tablestore\Tablestore;
+use Dew\Tablestore\TablestoreInstance;
 use Protos\ColumnPaginationFilter;
 use Protos\ComparatorType;
 use Protos\CompositeColumnValueFilter;
@@ -98,6 +99,25 @@ function tablestore(): Tablestore
     $tablestore = new Tablestore(
         getenv('ACS_ACCESS_KEY_ID'), getenv('ACS_ACCESS_KEY_SECRET'),
         getenv('TS_ENDPOINT'), getenv('TS_INSTANCE')
+    );
+
+    $token = getenv('ACS_STS_TOKEN');
+
+    if (is_string($token) && $token !== '') {
+        $tablestore->tokenUsing($token);
+    }
+
+    return $tablestore;
+}
+
+/**
+ * Make a Tablestore instance client from environment.
+ */
+function instance(): TablestoreInstance
+{
+    $tablestore = new TablestoreInstance(
+        getenv('ACS_ACCESS_KEY_ID'), getenv('ACS_ACCESS_KEY_SECRET'),
+        getenv('ACS_DEFAULT_REGION')
     );
 
     $token = getenv('ACS_STS_TOKEN');
