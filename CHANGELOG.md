@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2023-12-19
+
+### Added
+
+- Tablestore instance management API (#25).
+- **[INTERNAL]** Static analysis workflow on Github Actions. (#26).
+- **[INTERNAL]** Initialize Git attributes file. (#26).
+
 ## [1.3.0] - 2023-12-14
 
 ### Added
@@ -44,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Where API to filter or apply condition update.
 - Filter columns by data version.
 
-[unreleased]: https://github.com/dew-serverless/tablestore-php/compare/v1.3.0...HEAD
+[unreleased]: https://github.com/dew-serverless/tablestore-php/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/dew-serverless/tablestore-php/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dew-serverless/tablestore-php/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/dew-serverless/tablestore-php/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/dew-serverless/tablestore-php/compare/v1.0.0...v1.1.0
