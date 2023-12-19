@@ -36,7 +36,7 @@ class Tablestore
         protected string $accessKeyId,
         protected string $accessKeySecret,
         protected string $endpoint,
-        string $instance = null
+        ?string $instance = null
     ) {
         $this->instance = $instance ?? GuessInstanceName::make($endpoint);
     }

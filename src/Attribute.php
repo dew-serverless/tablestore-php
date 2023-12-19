@@ -73,7 +73,7 @@ class Attribute
     /**
      * Create an awaiting deletion attribute.
      */
-    public static function delete(string $name, DateTimeInterface|int $timestamp = null): DeleteAttribute
+    public static function delete(string $name, DateTimeInterface|int|null $timestamp = null): DeleteAttribute
     {
         $attribute = new DeleteAttribute($name);
 

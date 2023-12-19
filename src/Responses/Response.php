@@ -37,7 +37,7 @@ class Response
      *
      * @return ($name is null ? array<mixed> : mixed)
      */
-    public function json(string $name = null, mixed $default = null): mixed
+    public function json(?string $name = null, mixed $default = null): mixed
     {
         if (! isset($this->decoded)) {
             $data = (string) $this->response->getBody();

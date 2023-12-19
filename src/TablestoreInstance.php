@@ -89,7 +89,7 @@ class TablestoreInstance
      *   InstanceDescription?: string,
      *   AliasName?: string,
      *   ClusterType?: string,
-     *   Network?: string
+     *   Network?: string,
      *   Tags?: InstanceTag[]
      * }  $instance
      * @return \Dew\Tablestore\Responses\Response<\Psr\Http\Message\ResponseInterface>
